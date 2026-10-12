@@ -29,20 +29,20 @@ const DEFAULT_BANNERS: BannersConfig = {
 
 /* ————————————————— SECTION 1 — HERO ————————————————— */
 export function Hero({ banner = DEFAULT_BANNERS.hero, content }: { banner?: string; content?: any }) {
-  const eyebrow = content?.heroEyebrow || "Winter Edit — 2026";
-  const heading = content?.heroHeading || "Quiet warmth.\nLasting form.";
+  const eyebrow = content?.heroEyebrow || "New Season — SS26";
+  const heading = content?.heroHeading || "Form / Function";
   const body =
     content?.heroBody ||
-    "Considered layers, tactile knits and outerwear for the colder days. Made to move with you, season after season.";
+    "Heavyweight jersey, tailored wool and considered outerwear. Quiet garments, engineered to be worn for years — not seasons.";
 
   return (
     <section className="relative -mt-16 flex min-h-[100svh] items-end overflow-hidden pt-16 group" aria-label="New season hero">
-      <div className="absolute inset-0 origin-center transition-transform duration-1000 ease-out">
+      <div className="absolute inset-0 origin-center">
         <Image src={banner || DEFAULT_BANNERS.hero} alt={`${BRAND_CONFIG.brandName} Campaign Shoot`} fill priority sizes="100vw" className="object-cover" />
       </div>
 
-      <div className="absolute inset-0 bg-gradient-to-t from-ink via-ink/45 to-transparent opacity-95" aria-hidden />
-      <div className="absolute inset-0 bg-gradient-to-r from-ink/60 via-transparent to-transparent opacity-75" aria-hidden />
+      <div className="absolute inset-0 bg-gradient-to-t from-ink/90 via-ink/40 to-transparent" aria-hidden />
+      <div className="absolute inset-0 bg-gradient-to-r from-ink/60 via-transparent to-transparent" aria-hidden />
 
       <div className="container-x relative z-10 pb-20 pt-24 text-paper sm:pb-32 sm:pt-36">
         {eyebrow && (
@@ -68,13 +68,13 @@ export function Hero({ banner = DEFAULT_BANNERS.hero, content }: { banner?: stri
           <div className="mt-10 flex flex-wrap items-center gap-4 sm:gap-5">
             <Link
               href="/shop"
-              className="inline-flex items-center justify-center h-12 px-8 text-xs uppercase tracking-[0.2em] font-semibold text-ink bg-paper border border-white hover:bg-gold-light hover:text-ink transition-all duration-300 shadow-lg cursor-pointer rounded-xs"
+              className="inline-flex items-center justify-center h-12 px-8 text-xs uppercase tracking-[0.2em] font-semibold text-ink bg-paper border border-white hover:bg-gold-light hover:text-ink transition-all duration-300 shadow-sm cursor-pointer rounded-xs"
             >
               Explore Collection
             </Link>
             <Link
               href="/about"
-              className="inline-flex items-center justify-center h-12 px-7 text-xs uppercase tracking-[0.2em] font-medium text-paper border border-white/30 bg-black/20 backdrop-blur-sm hover:border-gold hover:text-gold-light transition-all duration-300 cursor-pointer rounded-xs"
+              className="inline-flex items-center justify-center h-12 px-7 text-xs uppercase tracking-[0.2em] font-medium text-paper border border-white/40 bg-black/30 backdrop-blur-sm hover:border-gold hover:text-gold-light transition-all duration-300 cursor-pointer rounded-xs"
             >
               The Atelier Story
             </Link>
@@ -90,9 +90,8 @@ export function Hero({ banner = DEFAULT_BANNERS.hero, content }: { banner?: stri
   );
 }
 
-/* ————————————————— VALUE MARQUEE (BULLETPROOF SAFE) ————————————————— */
+/* ————————————————— VALUE MARQUEE (CMS CONTROLLED) ————————————————— */
 export function ValueMarquee({ itemsString }: { itemsString?: string }) {
-  // নিশ্চিত করা হচ্ছে যে কোনো অবস্থাতেই ক্র্যাশ হবে না
   const rawList = typeof itemsString === "string" && itemsString.trim().length > 0 
     ? itemsString.split("|") 
     : (BRAND_CONFIG.marqueeItems || [
@@ -106,14 +105,14 @@ export function ValueMarquee({ itemsString }: { itemsString?: string }) {
   const items = rawList.map((s) => String(s).trim()).filter(Boolean);
 
   return (
-    <div className="border-b border-line/50 bg-paper py-4 sm:py-5 overflow-hidden">
+    <div className="border-b border-line/60 bg-paper py-4 sm:py-5 overflow-hidden">
       <div className="container-x flex flex-wrap items-center justify-center gap-x-6 gap-y-2.5 text-center sm:gap-x-10">
         {items.map((item, index) => (
           <div key={`${item}-${index}`} className="flex items-center gap-6 sm:gap-10">
-            <span className="text-[10px] sm:text-[11px] uppercase tracking-[0.26em] text-ink/75 font-semibold font-mono">
+            <span className="text-[10px] sm:text-[11px] uppercase tracking-[0.26em] text-ink font-semibold font-mono">
               {item}
             </span>
-            {index < items.length - 1 && <span className="hidden size-1 rounded-full bg-gold-dark/40 sm:inline-block" aria-hidden />}
+            {index < items.length - 1 && <span className="hidden size-1 rounded-full bg-gold-dark sm:inline-block" aria-hidden />}
           </div>
         ))}
       </div>
@@ -133,9 +132,9 @@ export function FeaturedCollection({ banner = DEFAULT_BANNERS.collection, conten
     <section className="container-x py-24 lg:py-36" aria-label="The new collection">
       <div className="grid items-center gap-12 lg:gap-20 lg:grid-cols-12">
         <Reveal className="lg:col-span-7" direction="left">
-          <Link href="/collections/new-season" className="group relative block overflow-hidden bg-cream/40 border border-line/60 shadow-sm rounded-xs">
+          <Link href="/collections/new-season" className="group relative block overflow-hidden bg-cream/40 border border-line rounded-xs shadow-sm">
             <div className="relative aspect-[4/5] sm:aspect-[16/11]">
-              <Image src={banner || DEFAULT_BANNERS.collection} alt={`Featured Collection — ${BRAND_CONFIG.brandName}`} fill sizes="(max-width: 1024px) 100vw, 58vw" className="object-cover transition-transform duration-700 ease-out group-hover:scale-[1.02]" />
+              <Image src={banner || DEFAULT_BANNERS.collection} alt={`Featured Collection — ${BRAND_CONFIG.brandName}`} fill sizes="(max-width: 1024px) 100vw, 58vw" className="object-cover transition-transform duration-500 ease-out group-hover:scale-[1.01]" />
             </div>
           </Link>
         </Reveal>
@@ -160,10 +159,10 @@ export function FeaturedCollection({ banner = DEFAULT_BANNERS.collection, conten
           <Reveal delay={260}>
             <Link
               href="/collections/new-season"
-              className="mt-8 inline-flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.22em] text-ink hover:text-gold-dark transition-colors pb-1 border-b border-ink/30 hover:border-gold-dark"
+              className="mt-8 inline-flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.22em] text-ink hover:text-gold-dark transition-colors pb-1 border-b border-ink/40 hover:border-gold-dark"
             >
               <span>Explore Collection</span>
-              <ArrowRight className="size-3.5 transition-transform group-hover:translate-x-1" />
+              <ArrowRight className="size-3.5" />
             </Link>
           </Reveal>
         </div>
@@ -177,9 +176,9 @@ export function SelectedPieces({ products = [] }: { products?: Product[] }) {
   if (!products || products.length === 0) return null;
 
   return (
-    <section className="bg-cream/25 border-y border-line/50 py-24 lg:py-32" aria-label="Selected pieces">
+    <section className="bg-cream/25 border-y border-line/60 py-24 lg:py-32" aria-label="Selected pieces">
       <div className="container-x">
-        <div className="mb-12 flex flex-wrap items-end justify-between gap-6 border-b border-line/50 pb-6">
+        <div className="mb-12 flex flex-wrap items-end justify-between gap-6 border-b border-line/60 pb-6">
           <Reveal>
             <div>
               <p className="eyebrow !text-gold-dark font-mono font-semibold tracking-[0.25em]">Curated Archive</p>
@@ -210,8 +209,8 @@ export function CategorySplit({ menBanner = DEFAULT_BANNERS.men, womenBanner = D
       {cats.map((c) => (
         <Link key={c.title} href={c.href} className="group relative block overflow-hidden">
           <div className="relative aspect-[4/5] md:aspect-[3/4]">
-            <Image src={c.image} alt={c.alt} fill sizes="(max-width: 768px) 100vw, 50vw" className="object-cover transition-transform duration-700 ease-out group-hover:scale-[1.02]" />
-            <div className="absolute inset-0 bg-gradient-to-t from-ink/75 via-ink/15 to-transparent transition-opacity duration-500 group-hover:opacity-90" aria-hidden />
+            <Image src={c.image} alt={c.alt} fill sizes="(max-width: 768px) 100vw, 50vw" className="object-cover transition-transform duration-500 ease-out group-hover:scale-[1.01]" />
+            <div className="absolute inset-0 bg-gradient-to-t from-ink/80 via-ink/20 to-transparent transition-opacity duration-300" aria-hidden />
           </div>
           <div className="absolute inset-x-0 bottom-0 flex flex-col justify-end p-8 sm:p-14 text-paper">
             <h3 className="font-display text-3xl sm:text-4xl lg:text-5xl font-light tracking-tight">{c.title}</h3>
@@ -231,7 +230,7 @@ export function Story({ banner = DEFAULT_BANNERS.story, content }: { banner?: st
   const heading = content?.storyHeading || "Designed for movement.\nBuilt with intention.";
   const body =
     content?.storyBody ||
-    `${BRAND_CONFIG.brandName} began with a simple fatigue: closets full of clothes, nothing worth wearing. We make the opposite — a narrow line of garments in heavyweight natural cloth, cut generously and finished slowly.`;
+    `${BRAND_CONFIG.brandName} operates from an uncompromising perspective: a narrow wardrobe of heavyweight natural cloths, cut with generous architectural lines.`;
 
   return (
     <section className="bg-ink text-paper" aria-label="The brand philosophy">
@@ -283,7 +282,7 @@ export function CollectionFeature({ banner = DEFAULT_BANNERS.hero, content }: { 
   const heading = content?.coreHeading || "Core 01";
   const body =
     content?.coreBody ||
-    "The permanent wardrobe. Seasonless silhouettes in natural tones — restocked continuously, never discounted into noise.";
+    "The permanent uniform. Seasonless garments in heavyweight earth tones — continually restocked, refined, and never discounted.";
 
   return (
     <section className="container-x py-24 lg:py-36" aria-label="Core collection">
@@ -318,9 +317,9 @@ export function CollectionFeature({ banner = DEFAULT_BANNERS.hero, content }: { 
           </Reveal>
         </div>
         <Reveal className="order-1 lg:order-2 lg:col-span-8" direction="left">
-          <Link href="/collections/core" className="group relative block overflow-hidden bg-cream/40 border border-line/60 rounded-xs shadow-sm">
+          <Link href="/collections/core" className="group relative block overflow-hidden bg-cream/40 border border-line rounded-xs shadow-sm">
             <div className="relative aspect-[16/10] sm:aspect-[21/9] lg:aspect-[16/10]">
-              <Image src={banner || DEFAULT_BANNERS.hero} alt="Core collection" fill sizes="(max-width: 1024px) 100vw, 66vw" className="object-cover transition-transform duration-700 ease-out group-hover:scale-[1.02]" />
+              <Image src={banner || DEFAULT_BANNERS.hero} alt="Core collection" fill sizes="(max-width: 1024px) 100vw, 66vw" className="object-cover transition-transform duration-500 ease-out group-hover:scale-[1.01]" />
             </div>
           </Link>
         </Reveal>
@@ -334,12 +333,12 @@ export function ProductHighlight({ product }: { product?: Product | null }) {
   if (!product) return null;
 
   return (
-    <section className="bg-cream/20 border-t border-line/50 py-24 lg:py-32" aria-label="Featured product">
+    <section className="bg-cream/20 border-t border-line/60 py-24 lg:py-32" aria-label="Featured product">
       <div className="container-x grid items-center gap-12 lg:grid-cols-2 lg:gap-20">
         <Reveal className="relative" direction="left">
-          <Link href={`/products/${product.slug}`} className="group relative block overflow-hidden border border-line/50 bg-paper rounded-xs shadow-md">
+          <Link href={`/products/${product.slug}`} className="group relative block overflow-hidden border border-line bg-paper rounded-xs shadow-sm">
             <div className="relative aspect-[4/5]">
-              <Image src={product.images?.[0]?.src || "/images/product-hoodie.jpg"} alt={product.name} fill sizes="(max-width: 1024px) 100vw, 50vw" className="object-cover transition-transform duration-700 ease-out group-hover:scale-[1.02]" />
+              <Image src={product.images?.[0]?.src || "/images/product-hoodie.jpg"} alt={product.name} fill sizes="(max-width: 1024px) 100vw, 50vw" className="object-cover" />
             </div>
           </Link>
         </Reveal>
@@ -353,7 +352,7 @@ export function ProductHighlight({ product }: { product?: Product | null }) {
           <Reveal delay={180}>
             <div className="mt-4 flex items-center gap-4">
               <Price amountBDT={product.priceBDT} className="text-2xl font-semibold text-ink" />
-              <span className="flex items-center gap-1.5 text-[10px] text-ink/70 font-mono tracking-wider bg-gold/15 px-3 py-1 rounded-full border border-gold/30">
+              <span className="flex items-center gap-1.5 text-[10px] text-ink/80 font-mono tracking-wider bg-gold/15 px-3 py-1 rounded-full border border-gold/30">
                 <Star className="size-3 fill-gold text-gold" /> {product.rating || 5.0} ({product.reviews || 0} Reviews)
               </span>
             </div>
@@ -371,7 +370,7 @@ export function ProductHighlight({ product }: { product?: Product | null }) {
               </Link>
               <Link
                 href="/shop"
-                className="inline-flex items-center justify-center h-12 px-7 text-xs uppercase tracking-[0.2em] font-medium text-ink border border-line hover:border-ink transition-all duration-300 rounded-xs"
+                className="inline-flex items-center justify-center h-12 px-7 text-xs uppercase tracking-[0.2em] font-medium text-ink border border-ink/40 hover:border-ink transition-all duration-300 rounded-xs"
               >
                 View All Pieces
               </Link>
@@ -393,7 +392,7 @@ export function NewsletterSection({ content }: { content?: any }) {
 
   return (
     <section className="container-x py-24 lg:py-36" aria-label="Newsletter">
-      <Reveal className="mx-auto max-w-3xl border border-line/60 bg-paper p-8 sm:p-16 text-center rounded-xs shadow-sm">
+      <Reveal className="mx-auto max-w-3xl border border-line bg-paper p-8 sm:p-16 text-center rounded-xs shadow-sm">
         {eyebrow && (
           <div className="inline-flex items-center gap-2 border border-gold/40 bg-gold/10 px-4 py-1.5 text-[10px] font-mono uppercase tracking-[0.25em] text-gold-dark mb-5 rounded-xs">
             <Sparkles className="size-3" />
