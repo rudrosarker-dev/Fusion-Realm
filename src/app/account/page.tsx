@@ -1,7 +1,6 @@
-// START OF FILE src/app/account/page.tsx
 "use client";
 
-import { CheckCircle2, Eye, EyeOff, LogOut, Package, Trash2, Truck, FileText } from "lucide-react";
+import { CheckCircle2, Eye, EyeOff, LogOut, Package, Trash2, Truck, FileText, Plus, MapPin, User, Save } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { Button, Price } from "@/components/ui/primitives";
@@ -9,6 +8,18 @@ import { useToast } from "@/lib/store";
 import { cn, LS_KEYS, readLS, writeLS } from "@/lib/utils";
 import { BRAND_CONFIG } from "@/lib/brand.config";
 import type { Order } from "@/lib/types";
+
+// বাংলাদেশের ৮টি বিভাগ ও ৬৪টি জেলার লিস্ট
+const BD_DIVISIONS_DATA: Record<string, string[]> = {
+  Dhaka: ["Dhaka", "Gazipur", "Narayanganj", "Tangail", "Narsingdi", "Faridpur", "Gopalganj", "Kishoreganj", "Madaripur", "Manikganj", "Munshiganj", "Rajbari", "Shariatpur"],
+  Chattogram: ["Chattogram", "Cox's Bazar", "Cumilla", "Feni", "Brahmanbaria", "Noakhali", "Chandpur", "Lakshmipur", "Rangamati", "Khagrachhari", "Bandarban"],
+  Rajshahi: ["Rajshahi", "Bogura", "Pabna", "Sirajganj", "Naogaon", "Natore", "Chapainawabganj", "Joypurhat"],
+  Khulna: ["Khulna", "Jashore", "Kushtia", "Satkhira", "Bagerhat", "Jhenaidah", "Chuadanga", "Meherpur", "Magura", "Narail"],
+  Sylhet: ["Sylhet", "Moulvibazar", "Habiganj", "Sunamganj"],
+  Barishal: ["Barishal", "Patuakhali", "Bhola", "Pirojpur", "Barguna", "Jhalokathi"],
+  Rangpur: ["Rangpur", "Dinajpur", "Kurigram", "Gaibandha", "Nilphamari", "Panchagarh", "Thakurgaon", "Lalmonirhat"],
+  Mymensingh: ["Mymensingh", "Jamalpur", "Netrokona", "Sherpur"]
+};
 
 interface CustomerUser {
   name: string;
@@ -23,6 +34,7 @@ interface SavedAddress {
   fullName: string;
   phone: string;
   address: string;
+  division: string;
   city: string;
   postalCode: string;
   country: string;
@@ -48,10 +60,17 @@ export default function AccountPage() {
   const [tab, setTab] = useState<"orders" | "track" | "addresses" | "profile">("orders");
   const [orders, setOrders] = useState<Order[]>([]);
 
+  // অ্যাড্রেস স্টেট
   const [addresses, setAddresses] = useState<SavedAddress[]>([]);
   const [isAddingAddress, setIsAddingAddress] = useState(false);
-  const [newAddr, setNewAddr] = useState({ fullName: "", phone: "", address: "", city: "", postalCode: "" });
+  const [newAddr, setNewAddr] = useState({ fullName: "", phone: "", address: "", division: "Dhaka", city: "Dhaka", postalCode: "" });
 
+  // প্রোফাইল এডিট স্টেট
+  const [editName, setEditName] = useState("");
+  const [editEmail, setEditEmail] = useState("");
+  const [savingProfile, setSavingProfile] = useState(false);
+
+  // ট্র্যাক স্টেট
   const [trackQuery, setTrackQuery] = useState("");
   const [trackedOrder, setTrackedOrder] = useState<any>(null);
   const [trackLoading, setTrackLoading] = useState(false);
@@ -67,12 +86,12 @@ export default function AccountPage() {
         try {
           const userObj = JSON.parse(decodeURIComponent(sessionParam));
           setCurrentUser(userObj);
+          setEditName(userObj.name || "");
+          setEditEmail(userObj.email || "");
           writeLS(CUSTOMER_SESSION_KEY, userObj);
           push("success", `স্বাগতম, ${userObj.name}!`);
           window.history.replaceState({}, document.title, window.location.pathname);
-        } catch (e) {
-          console.error("Google session parse error", e);
-        }
+        } catch (e) {}
       } else if (errorParam) {
         push("error", "গুগল সাইন-ইন ব্যর্থ হয়েছে। আবার চেষ্টা করুন।");
         window.history.replaceState({}, document.title, window.location.pathname);
@@ -80,7 +99,11 @@ export default function AccountPage() {
     }
 
     const session = readLS<CustomerUser | null>(CUSTOMER_SESSION_KEY, null);
-    if (session) setCurrentUser(session);
+    if (session) {
+      setCurrentUser(session);
+      setEditName(session.name || "");
+      setEditEmail(session.email || "");
+    }
 
     const local = readLS<Order[]>(LS_KEYS.orders, []);
     setOrders(local);
@@ -149,6 +172,8 @@ export default function AccountPage() {
         push("error", data.error || "লগইন ব্যর্থ হয়েছে।");
       } else {
         setCurrentUser(data.user);
+        setEditName(data.user.name || "");
+        setEditEmail(data.user.email || "");
         writeLS(CUSTOMER_SESSION_KEY, data.user);
         push("success", `স্বাগতম, ${data.user.name}!`);
       }
@@ -164,7 +189,7 @@ export default function AccountPage() {
     const emailClean = regEmail.trim().toLowerCase();
 
     if (!name.trim() || !isValidEmail(emailClean) || !regPassword.trim() || regPassword.trim().length < 6) {
-      push("error", "সব তথ্য সঠিকভাবে পূরণ করুন (পাসওয়ার্ড অন্তত ৬ অক্ষরের হতে হবে)।");
+      push("error", "সব তথ্য পূরণ করুন (পাসওয়ার্ড অন্তত ৬ অক্ষরের হতে হবে)।");
       return;
     }
 
@@ -186,6 +211,8 @@ export default function AccountPage() {
         push("error", data.error || "অ্যাকাউন্ট তৈরি করা যায়নি।");
       } else {
         setCurrentUser(data.user);
+        setEditName(data.user.name || "");
+        setEditEmail(data.user.email || "");
         writeLS(CUSTOMER_SESSION_KEY, data.user);
         push("success", `অ্যাকাউন্ট তৈরি সফল হয়েছে! স্বাগতম, ${data.user.name}।`);
       }
@@ -238,6 +265,94 @@ export default function AccountPage() {
     push("info", "সাইন আউট করা হয়েছে।");
   };
 
+  // অ্যাড্রেস সেভ করার হ্যান্ডলার
+  const handleSaveAddress = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newAddr.fullName || !newAddr.phone || !newAddr.address || !currentUser) {
+      push("error", "সব তথ্য সঠিকভাবে পূরণ করুন।");
+      return;
+    }
+
+    const created: SavedAddress = {
+      id: `addr-${Date.now()}`,
+      email: currentUser.email.toLowerCase(),
+      fullName: newAddr.fullName,
+      phone: newAddr.phone,
+      address: newAddr.address,
+      division: newAddr.division,
+      city: newAddr.city,
+      postalCode: newAddr.postalCode,
+      country: "Bangladesh",
+    };
+
+    const updated = [...addresses, created];
+    setAddresses(updated);
+    writeLS("nf-saved-addresses", updated);
+    setIsAddingAddress(false);
+    setNewAddr({ fullName: "", phone: "", address: "", division: "Dhaka", city: "Dhaka", postalCode: "" });
+    push("success", "নতুন ডেলিভারি ঠিকানা সেভ হয়েছে!");
+  };
+
+  const handleDeleteAddress = (id: string) => {
+    const updated = addresses.filter((a) => a.id !== id);
+    setAddresses(updated);
+    writeLS("nf-saved-addresses", updated);
+    push("info", "ঠিকানা মুছে ফেলা হয়েছে।");
+  };
+
+  // প্রোফাইল (নাম ও ইমেইল) আপডেট হ্যান্ডলার
+  const handleUpdateProfile = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editName.trim() || !editEmail.trim() || !currentUser) {
+      push("error", "নাম ও ইমেইল খালি রাখা যাবে না।");
+      return;
+    }
+
+    setSavingProfile(true);
+    setTimeout(() => {
+      const updatedUser: CustomerUser = {
+        ...currentUser,
+        name: editName.trim(),
+        email: editEmail.trim().toLowerCase(),
+      };
+
+      setCurrentUser(updatedUser);
+      writeLS(CUSTOMER_SESSION_KEY, updatedUser);
+      setSavingProfile(false);
+      push("success", "আপনার প্রোফাইল তথ্য সফলভাবে সেভ হয়েছে!");
+    }, 600);
+  };
+
+  // পার্সেল ট্র্যাকিং হ্যান্ডলার
+  const handleTrackSearch = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!trackQuery.trim()) return;
+    setTrackLoading(true);
+    setTrackError("");
+    setTrackedOrder(null);
+
+    try {
+      const res = await fetch(`/api/orders/track?id=${encodeURIComponent(trackQuery.trim())}&phone=${encodeURIComponent(trackQuery.trim())}`);
+      const data = await res.json();
+      if (res.ok && data.orders && data.orders.length > 0) {
+        setTrackedOrder(data.orders[0]);
+      } else {
+        const found = orders.find(
+          (o) => o.id.toLowerCase() === trackQuery.trim().toLowerCase() || o.address?.phone === trackQuery.trim()
+        );
+        if (found) {
+          setTrackedOrder(found);
+        } else {
+          setTrackError("কোনো পার্সেল বা অর্ডার পাওয়া যায়নি। সঠিক Order ID বা ফোন নম্বর দিন।");
+        }
+      }
+    } catch {
+      setTrackError("সার্ভারের সাথে যোগাযোগ করা যাচ্ছে না।");
+    } finally {
+      setTrackLoading(false);
+    }
+  };
+
   const userOrders = orders.filter((o) => {
     const userEmail = (currentUser?.email || "").toLowerCase().trim();
     const orderEmail = (o.email || "").toLowerCase().trim();
@@ -254,10 +369,11 @@ export default function AccountPage() {
     (a) => currentUser?.email && a.email?.toLowerCase() === currentUser.email.toLowerCase()
   );
 
+  // ১. লগইন না থাকলে কার্ড (Sign In / Register / Forgot)
   if (!currentUser) {
     return (
       <div className="container-x pb-24 pt-32 lg:pt-40">
-        <div className="mx-auto w-full max-w-[400px] rounded-xs border border-line bg-paper p-8 shadow-sm">
+        <div className="mx-auto w-full max-w-[400px] border border-line bg-paper p-8 shadow-sm">
           {authView === "signin" && (
             <div className="space-y-6">
               <div className="text-center space-y-2">
@@ -279,7 +395,7 @@ export default function AccountPage() {
                     value={loginInput}
                     onChange={(e) => setLoginInput(e.target.value)}
                     placeholder="name@domain.com"
-                    className="w-full h-11 rounded-xs border border-line bg-transparent px-3.5 text-xs text-ink outline-none transition-colors focus:border-ink placeholder:text-fog font-mono"
+                    className="w-full h-11 border border-line bg-transparent px-3.5 text-xs text-ink outline-none transition-colors focus:border-ink placeholder:text-fog font-mono"
                   />
                 </div>
 
@@ -292,7 +408,7 @@ export default function AccountPage() {
                         setAuthView("forgot");
                         setForgotEmail("");
                       }}
-                      className="text-[11px] text-fog hover:text-gold-dark transition-colors cursor-pointer"
+                      className="text-[11px] text-fog hover:text-ink transition-colors cursor-pointer"
                     >
                       Forgot password?
                     </button>
@@ -304,7 +420,7 @@ export default function AccountPage() {
                       value={password}
                       onChange={(e) => setPassword(e.target.value)}
                       placeholder="••••••••••••"
-                      className="w-full h-11 rounded-xs border border-line bg-transparent px-3.5 pr-10 text-xs text-ink outline-none transition-colors focus:border-ink placeholder:text-fog font-mono"
+                      className="w-full h-11 border border-line bg-transparent px-3.5 pr-10 text-xs text-ink outline-none transition-colors focus:border-ink placeholder:text-fog font-mono"
                     />
                     <button
                       type="button"
@@ -319,7 +435,7 @@ export default function AccountPage() {
                 <button
                   type="submit"
                   disabled={loading}
-                  className="w-full h-11 rounded-xs bg-ink text-paper text-xs font-semibold uppercase tracking-[0.2em] hover:bg-ash transition-all cursor-pointer mt-2 shadow-sm disabled:opacity-50"
+                  className="w-full h-11 bg-ink text-paper text-xs font-semibold uppercase tracking-[0.2em] hover:bg-ash transition-all cursor-pointer mt-2 shadow-sm disabled:opacity-50"
                 >
                   {loading ? "Authenticating..." : "Log In"}
                 </button>
@@ -335,7 +451,7 @@ export default function AccountPage() {
               <button
                 type="button"
                 onClick={handleGoogleSignIn}
-                className="w-full h-11 rounded-xs border border-line bg-cream/30 flex items-center justify-center gap-3 text-xs font-semibold uppercase tracking-wider text-ink hover:bg-cream/70 hover:border-ink transition-colors cursor-pointer shadow-2xs"
+                className="w-full h-11 border border-line bg-cream/30 flex items-center justify-center gap-3 text-xs font-semibold uppercase tracking-wider text-ink hover:bg-cream/70 hover:border-ink transition-colors cursor-pointer"
               >
                 <svg className="size-4 shrink-0" viewBox="0 0 24 24">
                   <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" />
@@ -357,7 +473,7 @@ export default function AccountPage() {
                     setRegPhone("");
                     setRegPassword("");
                   }}
-                  className="font-semibold text-ink underline underline-offset-4 hover:text-gold-dark transition-colors cursor-pointer"
+                  className="font-semibold text-ink underline underline-offset-4 hover:text-ash transition-colors cursor-pointer"
                 >
                   Create an account
                 </button>
@@ -369,12 +485,8 @@ export default function AccountPage() {
             <div className="space-y-6">
               <div className="text-center space-y-1.5">
                 <p className="eyebrow !text-gold-dark font-mono">Join The House</p>
-                <h1 className="font-display text-2xl tracking-tight text-ink">
-                  Create Account
-                </h1>
-                <p className="text-xs text-ash leading-relaxed">
-                  Join {BRAND_CONFIG.brandName} for seamless orders & custom fittings.
-                </p>
+                <h1 className="font-display text-2xl tracking-tight text-ink">Create Account</h1>
+                <p className="text-xs text-ash leading-relaxed">Join {BRAND_CONFIG.brandName} for seamless orders & custom fittings.</p>
               </div>
 
               <form onSubmit={handleRegister} className="space-y-3.5">
@@ -386,7 +498,7 @@ export default function AccountPage() {
                     value={name}
                     onChange={(e) => setName(e.target.value)}
                     placeholder="e.g. S. M. Rahman"
-                    className="w-full h-10 rounded-xs border border-line bg-transparent px-3.5 text-xs text-ink outline-none transition-colors focus:border-ink placeholder:text-fog"
+                    className="w-full h-10 border border-line bg-transparent px-3.5 text-xs text-ink outline-none transition-colors focus:border-ink placeholder:text-fog"
                   />
                 </div>
 
@@ -398,7 +510,7 @@ export default function AccountPage() {
                     value={regEmail}
                     onChange={(e) => setRegEmail(e.target.value)}
                     placeholder="name@domain.com"
-                    className="w-full h-10 rounded-xs border border-line bg-transparent px-3.5 text-xs text-ink outline-none transition-colors focus:border-ink placeholder:text-fog font-mono"
+                    className="w-full h-10 border border-line bg-transparent px-3.5 text-xs text-ink outline-none transition-colors focus:border-ink placeholder:text-fog font-mono"
                   />
                 </div>
 
@@ -410,14 +522,14 @@ export default function AccountPage() {
                     value={regPassword}
                     onChange={(e) => setRegPassword(e.target.value)}
                     placeholder="••••••••••••"
-                    className="w-full h-10 rounded-xs border border-line bg-transparent px-3.5 text-xs text-ink outline-none transition-colors focus:border-ink placeholder:text-fog font-mono"
+                    className="w-full h-10 border border-line bg-transparent px-3.5 text-xs text-ink outline-none transition-colors focus:border-ink placeholder:text-fog font-mono"
                   />
                 </div>
 
                 <button
                   type="submit"
                   disabled={loading}
-                  className="w-full h-11 rounded-xs bg-ink text-paper text-xs font-semibold uppercase tracking-[0.2em] hover:bg-ash transition-all cursor-pointer mt-2 shadow-sm disabled:opacity-50"
+                  className="w-full h-11 bg-ink text-paper text-xs font-semibold uppercase tracking-[0.2em] hover:bg-ash transition-all cursor-pointer mt-2 shadow-sm disabled:opacity-50"
                 >
                   {loading ? "Creating..." : "Create Account"}
                 </button>
@@ -428,7 +540,7 @@ export default function AccountPage() {
                 <button
                   type="button"
                   onClick={() => setAuthView("signin")}
-                  className="font-semibold text-ink underline underline-offset-4 hover:text-gold-dark transition-colors cursor-pointer"
+                  className="font-semibold text-ink underline underline-offset-4 hover:text-ash transition-colors cursor-pointer"
                 >
                   Log In
                 </button>
@@ -440,12 +552,8 @@ export default function AccountPage() {
             <div className="space-y-6">
               <div className="text-center space-y-1.5">
                 <p className="eyebrow !text-gold-dark font-mono">Password Recovery</p>
-                <h1 className="font-display text-2xl tracking-tight text-ink">
-                  Reset Password
-                </h1>
-                <p className="text-xs text-ash leading-relaxed">
-                  Enter your email to receive recovery instructions.
-                </p>
+                <h1 className="font-display text-2xl tracking-tight text-ink">Reset Password</h1>
+                <p className="text-xs text-ash leading-relaxed">Enter your email to receive recovery instructions.</p>
               </div>
 
               <form onSubmit={handleForgot} className="space-y-4">
@@ -457,14 +565,14 @@ export default function AccountPage() {
                     value={forgotEmail}
                     onChange={(e) => setForgotEmail(e.target.value)}
                     placeholder="name@domain.com"
-                    className="w-full h-11 rounded-xs border border-line bg-transparent px-3.5 text-xs text-ink outline-none transition-colors focus:border-ink placeholder:text-fog font-mono"
+                    className="w-full h-11 border border-line bg-transparent px-3.5 text-xs text-ink outline-none transition-colors focus:border-ink placeholder:text-fog font-mono"
                   />
                 </div>
 
                 <button
                   type="submit"
                   disabled={loading}
-                  className="w-full h-11 rounded-xs bg-ink text-paper text-xs font-semibold uppercase tracking-[0.2em] hover:bg-ash transition-all cursor-pointer shadow-sm disabled:opacity-50"
+                  className="w-full h-11 bg-ink text-paper text-xs font-semibold uppercase tracking-[0.2em] hover:bg-ash transition-all cursor-pointer shadow-sm disabled:opacity-50"
                 >
                   {loading ? "Sending..." : "Send Reset Link"}
                 </button>
@@ -486,24 +594,31 @@ export default function AccountPage() {
     );
   }
 
+  // ২. লগইন করা কাস্টমার পোর্টাল (এডমিন স্টাইল প্রিমিয়াম কার্ড)
+  const availableDistrictsForNewAddr = BD_DIVISIONS_DATA[newAddr.division] || [];
+
   return (
     <div className="container-x pb-24 pt-32 lg:pt-36 max-w-5xl mx-auto">
-      <div className="flex flex-wrap items-start justify-between gap-4">
+      {/* টপ হেডার */}
+      <div className="border border-line bg-paper p-6 sm:p-8 flex flex-wrap items-center justify-between gap-4 shadow-xs">
         <div>
-          <p className="eyebrow">MY ACCOUNT</p>
-          <h1 className="mt-2 font-display text-4xl sm:text-5xl">{currentUser.name}</h1>
-          <p className="mt-1 text-sm text-ash font-mono">{currentUser.email} — Atelier Member</p>
+          <span className="text-[10px] uppercase font-mono tracking-widest text-emerald-700 bg-emerald-500/10 px-2 py-0.5 border border-emerald-500/20">
+            Active Atelier Member
+          </span>
+          <h1 className="mt-2 font-display text-3xl sm:text-4xl text-ink">{currentUser.name}</h1>
+          <p className="mt-1 text-xs text-fog font-mono">{currentUser.email}</p>
         </div>
         <button
           onClick={handleSignOut}
-          className="inline-flex items-center gap-2 border border-line px-4 py-2 text-xs uppercase tracking-wider text-ink transition-colors hover:border-ink cursor-pointer"
+          className="inline-flex items-center gap-2 border border-line bg-cream/40 px-4 py-2.5 text-xs font-semibold uppercase tracking-wider text-ink transition-colors hover:border-ink hover:bg-ink hover:text-paper cursor-pointer"
         >
           <LogOut className="size-3.5" />
           <span>SIGN OUT</span>
         </button>
       </div>
 
-      <div className="mt-10 flex gap-8 border-b border-line">
+      {/* মেনু ট্যাব */}
+      <div className="mt-8 flex gap-8 border-b border-line text-xs font-semibold uppercase tracking-[0.2em]">
         {[
           ["orders", "ORDERS"],
           ["track", "TRACK"],
@@ -517,9 +632,9 @@ export default function AccountPage() {
               setIsAddingAddress(false);
             }}
             className={cn(
-              "pb-3 text-xs uppercase tracking-[0.2em] transition-colors relative cursor-pointer",
+              "pb-3.5 transition-colors relative cursor-pointer",
               tab === key
-                ? "font-semibold text-ink after:absolute after:bottom-0 after:left-0 after:right-0 after:h-0.5 after:bg-ink"
+                ? "text-ink after:absolute after:bottom-0 after:left-0 after:right-0 after:h-0.5 after:bg-ink"
                 : "text-fog hover:text-ink"
             )}
           >
@@ -528,42 +643,50 @@ export default function AccountPage() {
         ))}
       </div>
 
-      <div className="mt-10 min-h-[350px]">
+      <div className="mt-8 min-h-[350px]">
+        
+        {/* ১. ORDERS TAB */}
         {tab === "orders" && (
-          <div>
+          <div className="space-y-4">
             {userOrders.length === 0 ? (
-              <div className="py-16 text-center">
-                <div className="mx-auto flex size-12 items-center justify-center text-fog mb-4">
-                  <Package className="size-8" strokeWidth={1} />
-                </div>
+              <div className="border border-line bg-paper p-12 text-center space-y-3">
+                <Package className="size-10 text-fog mx-auto" strokeWidth={1.25} />
                 <h2 className="font-display text-2xl text-ink">No orders yet.</h2>
-                <p className="mt-2 text-sm text-ash">Orders placed with {currentUser.email} will show here.</p>
-                <div className="mt-6">
-                  <Button href="/shop">START SHOPPING</Button>
+                <p className="text-xs text-ash">Orders placed with {currentUser.email} will show here.</p>
+                <div className="pt-3">
+                  <Button href="/shop">Start Shopping</Button>
                 </div>
               </div>
             ) : (
-              <div className="space-y-4 max-w-3xl">
+              <div className="space-y-4">
                 {userOrders.map((o) => (
-                  <div key={o.id} className="border border-line p-5 flex flex-wrap items-center justify-between gap-4 bg-paper hover:border-ink transition-colors">
-                    <div>
-                      <p className="font-medium text-sm text-ink font-mono">{o.id}</p>
-                      <p className="text-xs text-fog mt-0.5">
+                  <div key={o.id} className="border border-line bg-paper p-5 sm:p-6 shadow-xs flex flex-wrap items-center justify-between gap-4">
+                    <div className="space-y-1">
+                      <div className="flex items-center gap-3">
+                        <span className="font-mono font-bold text-sm text-ink">{o.id}</span>
+                        <span className={cn(
+                          "text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 border font-mono",
+                          o.status === "delivered" ? "bg-emerald-500/10 text-emerald-700 border-emerald-500/20" :
+                          o.status === "shipped" ? "bg-blue-500/10 text-blue-700 border-blue-500/20" :
+                          "bg-amber-500/10 text-amber-800 border-amber-500/30"
+                        )}>
+                          {o.status}
+                        </span>
+                      </div>
+                      <p className="text-xs text-fog font-mono">
                         {new Date(o.placedAt).toLocaleDateString("en-GB", { day: "numeric", month: "long", year: "numeric" })} • {o.items?.length || 1} items
                       </p>
                     </div>
-                    <div className="flex items-center gap-3 sm:gap-4 flex-wrap">
-                      <span className="text-xs uppercase tracking-wider px-2.5 py-1 bg-cream border border-line font-medium text-ash">
-                        {o.status}
-                      </span>
-                      <Price amountBDT={o.totalBDT} className="font-medium text-sm text-ink" />
-                      
+
+                    <div className="flex items-center gap-4">
+                      <span className="font-mono font-bold text-sm text-ink"><Price amountBDT={o.totalBDT} /></span>
                       <Link
                         href={`/invoice/${o.id}`}
                         target="_blank"
-                        className="inline-flex items-center gap-1.5 text-xs uppercase tracking-wider text-ink font-semibold border border-line px-3 py-1.5 hover:bg-cream transition-colors cursor-pointer"
+                        className="inline-flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wider text-ink border border-line bg-cream/40 px-3 py-1.5 hover:bg-ink hover:text-paper transition-colors"
                       >
-                        <FileText className="size-3.5" /> Invoice
+                        <FileText className="size-3.5" />
+                        <span>Invoice</span>
                       </Link>
                     </div>
                   </div>
@@ -573,61 +696,194 @@ export default function AccountPage() {
           </div>
         )}
 
+        {/* ২. TRACK TAB */}
         {tab === "track" && (
-          <div className="max-w-2xl space-y-8">
-            <form onSubmit={(e) => { e.preventDefault(); }} className="border border-line bg-cream/40 p-6 sm:p-8 space-y-4">
-              <h2 className="text-xs font-semibold uppercase tracking-[0.2em] text-ink">Track Parcel by Order ID or Phone</h2>
+          <div className="max-w-2xl space-y-6">
+            <form onSubmit={handleTrackSearch} className="border border-line bg-paper p-6 sm:p-7 shadow-xs space-y-4">
+              <div>
+                <h2 className="text-xs font-semibold uppercase tracking-[0.2em] text-ink">Track Parcel by Order ID or Phone</h2>
+                <p className="text-xs text-fog mt-0.5">Real-time delivery progress updated by Steadfast courier.</p>
+              </div>
+
               <div className="flex gap-2">
                 <input
                   type="text"
                   required
                   value={trackQuery}
                   onChange={(e) => setTrackQuery(e.target.value)}
-                  placeholder="Enter Order ID (e.g. NF-831930) or Phone number"
-                  className="flex-1 border border-line bg-paper px-4 py-2.5 text-xs text-ink outline-none focus:border-ink font-mono placeholder:text-fog"
+                  placeholder="Enter Order ID (e.g. NF-300547) or Phone number"
+                  className="flex-1 border border-line bg-transparent px-3.5 py-2.5 text-xs text-ink outline-none focus:border-ink font-mono placeholder:text-fog"
                 />
-                <Button type="submit" disabled={trackLoading} size="sm">
+                <Button type="submit" disabled={trackLoading} className="text-xs uppercase">
                   {trackLoading ? "Searching..." : "Track"}
                 </Button>
               </div>
-              {trackError && <p className="text-xs text-error">{trackError}</p>}
+              {trackError && <p className="text-xs text-error font-mono">{trackError}</p>}
             </form>
-          </div>
-        )}
 
-        {tab === "addresses" && (
-          <div className="space-y-6 max-w-xl">
-            {userAddresses.length === 0 && !isAddingAddress && (
-              <p className="text-xs text-fog">No saved addresses yet.</p>
+            {trackedOrder && (
+              <div className="border border-line bg-paper p-6 space-y-5 animate-in fade-in">
+                <div className="flex items-center justify-between border-b border-line pb-3">
+                  <div>
+                    <span className="text-[10px] uppercase font-mono text-fog">Order Reference</span>
+                    <p className="font-mono font-bold text-base text-ink">{trackedOrder.id}</p>
+                  </div>
+                  <span className="text-xs font-bold uppercase tracking-wider bg-cream border border-line px-2.5 py-1 text-ink font-mono">
+                    {trackedOrder.orderStatus || trackedOrder.status}
+                  </span>
+                </div>
+
+                <div className="text-xs space-y-1.5 text-ash">
+                  <p>Customer: <strong className="text-ink">{trackedOrder.customerName || trackedOrder.address?.fullName}</strong></p>
+                  <p>Contact: <strong className="text-ink font-mono">{trackedOrder.customerPhone || trackedOrder.address?.phone}</strong></p>
+                  <p>Total Amount: <strong className="text-ink font-mono">৳{(trackedOrder.totalBDT || 0).toLocaleString()}</strong></p>
+                </div>
+              </div>
             )}
           </div>
         )}
 
-        {tab === "profile" && (
-          <div className="max-w-md space-y-6">
-            <div className="space-y-1.5">
-              <label className="text-[10px] uppercase tracking-[0.2em] text-fog font-medium block">NAME</label>
-              <input
-                type="text"
-                readOnly
-                value={currentUser.name}
-                className="w-full border border-line bg-paper px-3.5 py-2.5 text-xs text-ink outline-none font-medium"
-              />
+        {/* ৩. ADDRESSES TAB (এডমিন স্টাইল কার্ড ও নতুন অ্যাড্রেস যোগ করার ফর্ম) */}
+        {tab === "addresses" && (
+          <div className="space-y-6 max-w-2xl">
+            <div className="flex items-center justify-between border-b border-line pb-3">
+              <div>
+                <h2 className="text-xs font-semibold uppercase tracking-[0.2em] text-ink">Saved Shipping Addresses</h2>
+                <p className="text-xs text-fog mt-0.5">Manage your delivery destinations for faster 1-click checkout.</p>
+              </div>
+
+              {!isAddingAddress && (
+                <button
+                  type="button"
+                  onClick={() => setIsAddingAddress(true)}
+                  className="inline-flex items-center gap-1.5 bg-ink text-paper px-3.5 py-2 text-xs uppercase tracking-wider font-semibold hover:bg-ash transition-colors cursor-pointer"
+                >
+                  <Plus className="size-3.5" />
+                  <span>Add Address</span>
+                </button>
+              )}
             </div>
 
-            <div className="space-y-1.5">
-              <label className="text-[10px] uppercase tracking-[0.2em] text-fog font-medium block">EMAIL</label>
-              <input
-                type="email"
-                readOnly
-                value={currentUser.email}
-                className="w-full border border-line bg-paper px-3.5 py-2.5 text-xs text-ink outline-none font-mono"
-              />
-            </div>
+            {/* অ্যাড্রেস ক্রিয়েশন ফর্ম */}
+            {isAddingAddress && (
+              <form onSubmit={handleSaveAddress} className="border border-line bg-paper p-6 sm:p-7 shadow-xs space-y-4 animate-in fade-in">
+                <div className="border-b border-line pb-2 flex items-center justify-between">
+                  <h3 className="text-xs font-semibold uppercase tracking-wider text-ink">New Delivery Address</h3>
+                  <button type="button" onClick={() => setIsAddingAddress(false)} className="text-xs text-fog hover:text-ink">Cancel</button>
+                </div>
+
+                <div className="grid gap-4 sm:grid-cols-2">
+                  <Input label="Recipient Full Name *" required value={newAddr.fullName} onChange={(e) => setNewAddr({ ...newAddr, fullName: e.target.value })} placeholder="e.g. S. M. Rahman" />
+                  <Input label="Contact Phone *" required value={newAddr.phone} onChange={(e) => setNewAddr({ ...newAddr, phone: e.target.value })} placeholder="017XXXXXXXX" />
+                </div>
+
+                <Input label="Street Address *" required value={newAddr.address} onChange={(e) => setNewAddr({ ...newAddr, address: e.target.value })} placeholder="House, road, flat, area" />
+
+                <div className="grid gap-4 sm:grid-cols-2">
+                  <Select
+                    label="Division *"
+                    value={newAddr.division}
+                    onChange={(e) => {
+                      const div = e.target.value;
+                      const dists = BD_DIVISIONS_DATA[div] || [];
+                      setNewAddr({ ...newAddr, division: div, city: dists[0] || "" });
+                    }}
+                    options={Object.keys(BD_DIVISIONS_DATA).map((d) => ({ value: d, label: `${d} Division` }))}
+                  />
+
+                  <Select
+                    label="City / District *"
+                    value={newAddr.city}
+                    onChange={(e) => setNewAddr({ ...newAddr, city: e.target.value })}
+                    options={availableDistrictsForNewAddr.map((dst) => ({ value: dst, label: dst }))}
+                  />
+                </div>
+
+                <div className="pt-2 flex gap-3">
+                  <button type="submit" className="bg-ink text-paper px-5 py-2.5 text-xs uppercase tracking-wider font-semibold hover:bg-ash transition-colors cursor-pointer">
+                    Save Address
+                  </button>
+                  <button type="button" onClick={() => setIsAddingAddress(false)} className="border border-line px-5 py-2.5 text-xs uppercase tracking-wider text-ink hover:border-ink transition-colors cursor-pointer">
+                    Cancel
+                  </button>
+                </div>
+              </form>
+            )}
+
+            {/* সেভ করা ঠিকানার লিস্ট */}
+            {userAddresses.length === 0 && !isAddingAddress ? (
+              <div className="border border-line bg-paper p-8 text-center space-y-3">
+                <MapPin className="size-8 text-fog mx-auto" strokeWidth={1.5} />
+                <p className="text-xs text-ash">No delivery addresses saved yet. Click the button above to add one.</p>
+              </div>
+            ) : (
+              <div className="grid gap-4 sm:grid-cols-2">
+                {userAddresses.map((addr) => (
+                  <div key={addr.id} className="border border-line bg-paper p-5 space-y-2 relative group hover:border-ink transition-colors">
+                    <div className="flex items-start justify-between border-b border-line/60 pb-2">
+                      <span className="font-semibold text-xs text-ink">{addr.fullName}</span>
+                      <button onClick={() => handleDeleteAddress(addr.id)} className="text-fog hover:text-error transition-colors p-1" title="Delete address">
+                        <Trash2 className="size-3.5" />
+                      </button>
+                    </div>
+                    <p className="text-xs text-ash leading-relaxed">
+                      {addr.address}<br />
+                      {addr.city}, {addr.division || "Bangladesh"}<br />
+                      <span className="font-mono text-ink mt-1 block font-medium">{addr.phone}</span>
+                    </p>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
         )}
+
+        {/* ৪. PROFILE TAB (নাম ও ইমেইল এডিট এবং সেভ করার সুবিধা) */}
+        {tab === "profile" && (
+          <div className="border border-line bg-paper p-6 sm:p-8 max-w-xl shadow-xs space-y-6">
+            <div className="border-b border-line pb-3">
+              <h2 className="text-xs font-semibold uppercase tracking-[0.2em] text-ink">Personal Profile Settings</h2>
+              <p className="text-xs text-fog mt-0.5">Update your display name and email address across the atelier.</p>
+            </div>
+
+            <form onSubmit={handleUpdateProfile} className="space-y-4">
+              <div className="space-y-1.5">
+                <label className="text-[10px] uppercase font-mono tracking-wider text-fog block">Full Name</label>
+                <input
+                  type="text"
+                  required
+                  value={editName}
+                  onChange={(e) => setEditName(e.target.value)}
+                  className="w-full h-10 border border-line bg-transparent px-3 text-xs text-ink outline-none focus:border-ink font-medium"
+                />
+              </div>
+
+              <div className="space-y-1.5">
+                <label className="text-[10px] uppercase font-mono tracking-wider text-fog block">Email Address</label>
+                <input
+                  type="email"
+                  required
+                  value={editEmail}
+                  onChange={(e) => setEditEmail(e.target.value)}
+                  className="w-full h-10 border border-line bg-transparent px-3 text-xs text-ink outline-none focus:border-ink font-mono"
+                />
+              </div>
+
+              <div className="pt-2">
+                <button
+                  type="submit"
+                  disabled={savingProfile}
+                  className="inline-flex items-center gap-2 bg-ink text-paper px-5 py-2.5 text-xs uppercase tracking-wider font-semibold hover:bg-ash transition-colors cursor-pointer disabled:opacity-50"
+                >
+                  <Save className="size-3.5" />
+                  <span>{savingProfile ? "Saving..." : "Save Changes"}</span>
+                </button>
+              </div>
+            </form>
+          </div>
+        )}
+
       </div>
     </div>
   );
 }
-// END OF FILE src/app/account/page.tsx
