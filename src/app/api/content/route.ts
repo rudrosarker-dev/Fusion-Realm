@@ -10,7 +10,7 @@ export const dynamic = "force-dynamic";
 
 const DEFAULT_CONTENT = {
   homepageMode: "editorial",
-  marqueeItems: BRAND_CONFIG.marqueeItems.join(" | "),
+  marqueeItems: (BRAND_CONFIG.marqueeItems || []).join(" | "),
   homeContent: {
     heroEyebrow: "Winter Edit — 2026",
     heroHeading: "Quiet warmth.\nLasting form.",
@@ -36,13 +36,13 @@ const DEFAULT_CONTENT = {
   },
   about: {
     heading: "Quiet clothes,\nmade loudly well.",
-    story: "Tholvex Studio is an independent fashion house founded in Dhaka. We make a deliberately narrow line of garments in heavyweight natural cloth — each fitted eleven times, washed for character, and built to outlast the trend cycle.",
+    story: "Tholvex Studio is an independent fashion house founded in Dhaka.",
     point1Title: "Cloth First",
-    point1Body: "Every season starts in the fabric archive, not on a moodboard. We knit jersey between 260 and 480 grams per square metre and choose wool for how it ages.",
+    point1Body: "Every season starts in the fabric archive.",
     point2Title: "Eleven Fittings",
-    point2Body: "A silhouette is developed on a stand, then on bodies of different builds, until it forgives the most and flatters the widest.",
+    point2Body: "A silhouette is developed on a stand.",
     point3Title: "Small, Permanent Lines",
-    point3Body: "The Core Collection never goes on seasonal sale and is never replaced — only refined. Scarcity should be honest or not exist at all.",
+    point3Body: "The Core Collection never goes on seasonal sale.",
   },
   legal: {
     shipping: LEGAL["shipping-policy"]?.body?.join("\n\n") || "",
@@ -60,23 +60,11 @@ const DEFAULT_CONTENT = {
   faqs: [
     {
       q: "How do I track my order?",
-      a: "Once your order is confirmed and dispatched from our Dhaka studio, you will receive an SMS and email notification with your courier tracking reference (Steadfast / Pathao).",
+      a: "Once your order is confirmed and dispatched from our Dhaka studio, you will receive an SMS and email notification with your courier tracking reference.",
     },
     {
       q: "Where do you deliver and what are the rates?",
-      a: "We deliver nationwide across all 64 districts in Bangladesh. Standard delivery inside Dhaka metro is ৳100 (24–48 hours). Delivery outside Dhaka is ৳150 (2–4 working days). Orders exceeding ৳15,000 receive complimentary delivery.",
-    },
-    {
-      q: "How does Cash on Delivery (COD) work?",
-      a: "To confirm a Cash on Delivery order, the parcel delivery charge (৳100 inside Dhaka or ৳150 outside Dhaka) must be paid in advance via bKash or Nagad. The remaining garment price is paid directly in cash to the courier upon receiving your parcel.",
-    },
-    {
-      q: "What is your exchange and return policy?",
-      a: "Unworn garments with security tags attached in original packaging may be exchanged for size or store credit within 14 days of delivery.",
-    },
-    {
-      q: "Which payment options do you support?",
-      a: "We accept Cash on Delivery (with advance delivery fee), as well as Full Payment via bKash and Nagad Personal Send Money.",
+      a: "We deliver nationwide across all 64 districts in Bangladesh.",
     },
   ],
 };
@@ -142,17 +130,10 @@ export async function POST(req: NextRequest) {
         updated_at = NOW();
     `);
 
-    // ক্যাশ ক্লিয়ারিং
     revalidatePath("/", "layout");
     revalidatePath("/about", "page");
     revalidatePath("/shop", "page");
     revalidatePath("/contact", "page");
-    revalidatePath("/faq", "page");
-    revalidatePath("/shipping-policy", "page");
-    revalidatePath("/return-policy", "page");
-    revalidatePath("/privacy", "page");
-    revalidatePath("/terms", "page");
-    revalidatePath("/cookies", "page");
 
     return NextResponse.json({
       success: true,
