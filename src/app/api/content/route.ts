@@ -97,30 +97,29 @@ export async function GET() {
 
     if (result.rows && result.rows.length > 0) {
       const data = result.rows[0].content || {};
-      return NextResponse.json({
-        success: true,
-        content: {
-          about: { ...DEFAULT_CONTENT.about, ...(data.about || {}) },
-          legal: { ...DEFAULT_CONTENT.legal, ...(data.legal || {}) },
-          socials: { ...DEFAULT_CONFIG_SOCIALS(data.socials) },
-          faqs: Array.isArray(data.faqs) && data.faqs.length > 0 ? data.faqs : DEFAULT_CONTENT.faqs,
-          homepageMode: data.homepageMode || "editorial",
-          marqueeItems: data.marqueeItems || DEFAULT_CONTENT.marqueeItems,
-          homeContent: { ...(DEFAULT_CONTENT as any).homeContent, ...(data.homeContent || {}) },
-          shopContent: { ...(DEFAULT_CONTENT as any).shopContent, ...(data.shopContent || {}) },
+      return NextResponse.json(
+        {
+          success: true,
+          content: {
+            about: { ...DEFAULT_CONTENT.about, ...(data.about || {}) },
+            legal: { ...DEFAULT_CONTENT.legal, ...(data.legal || {}) },
+            socials: { ...DEFAULT_CONTENT.socials, ...(data.socials || {}) },
+            faqs: Array.isArray(data.faqs) && data.faqs.length > 0 ? data.faqs : DEFAULT_CONTENT.faqs,
+            homepageMode: data.homepageMode || "editorial",
+            marqueeItems: data.marqueeItems || DEFAULT_CONTENT.marqueeItems,
+            homeContent: { ...(DEFAULT_CONTENT as any).homeContent, ...(data.homeContent || {}) },
+            shopContent: { ...(DEFAULT_CONTENT as any).shopContent, ...(data.shopContent || {}) },
+          },
         },
-      });
+        { headers: { "Cache-Control": "no-store, max-age=0" } }
+      );
     }
 
-    return NextResponse.json({ success: true, content: DEFAULT_CONTENT });
+    return NextResponse.json({ success: true, content: DEFAULT_CONTENT }, { headers: { "Cache-Control": "no-store, max-age=0" } });
   } catch (error) {
     console.error("Content fetch error:", error);
     return NextResponse.json({ success: true, content: DEFAULT_CONTENT });
   }
-}
-
-function DEFAULT_CONFIG_SOCIALS(socialsData: any) {
-  return { ...DEFAULT_CONTENT.socials, ...(socialsData || {}) };
 }
 
 export async function POST(req: NextRequest) {
@@ -143,14 +142,21 @@ export async function POST(req: NextRequest) {
         updated_at = NOW();
     `);
 
+    // ক্যাশ ক্লিয়ারিং
     revalidatePath("/", "layout");
-    revalidatePath("/about");
-    revalidatePath("/shop");
-    revalidatePath("/contact");
+    revalidatePath("/about", "page");
+    revalidatePath("/shop", "page");
+    revalidatePath("/contact", "page");
+    revalidatePath("/faq", "page");
+    revalidatePath("/shipping-policy", "page");
+    revalidatePath("/return-policy", "page");
+    revalidatePath("/privacy", "page");
+    revalidatePath("/terms", "page");
+    revalidatePath("/cookies", "page");
 
     return NextResponse.json({
       success: true,
-      message: "Website content & settings updated live!",
+      message: "Website content & settings updated live in database!",
     });
   } catch (error) {
     console.error("Content save error:", error);
