@@ -18,13 +18,14 @@ export function ProductInfo({ product }: { product: Product }) {
   const { setCartOpen, currency } = useUI();
   const { push } = useToast();
 
-  const [size, setSize] = useState<string | null>(product.sizes?.length === 1 ? product.sizes[0].size : null);
-  const [color, setColor] = useState(product.colors?.[0]?.name ?? "Default");
+  const [size, setSize] = useState<string | null>(product?.sizes?.length === 1 ? product.sizes[0].size : null);
+  const [color, setColor] = useState(product?.colors?.[0]?.name ?? "Default");
   const [qty, setQty] = useState(1);
   const [tried, setTried] = useState(false);
   const [loading, setLoading] = useState<"add" | "buy" | null>(null);
 
   useEffect(() => {
+    if (!product) return;
     fbEvents.viewContent({
       id: product.id,
       name: product.name,
@@ -32,6 +33,8 @@ export function ProductInfo({ product }: { product: Product }) {
       category: product.category,
     });
   }, [product]);
+
+  if (!product) return null;
 
   const soldOut = isSoldOut(product);
   const stock = stockLabel(product);
@@ -105,7 +108,7 @@ export function ProductInfo({ product }: { product: Product }) {
 
       <div className="flex flex-col gap-2 border-t border-line pt-5">
         <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-ink">Colour — {color}</p>
-        <ColorSelector colors={product.colors} value={color} onChange={setColor} />
+        <ColorSelector colors={product.colors || []} value={color} onChange={setColor} />
       </div>
 
       <div className="flex flex-col gap-2.5">
@@ -118,7 +121,7 @@ export function ProductInfo({ product }: { product: Product }) {
             <SizeGuideButton />
           </div>
         </div>
-        <SizeSelector sizes={product.sizes} value={size} onChange={setSize} error={tried && !size} />
+        <SizeSelector sizes={product.sizes || []} value={size} onChange={setSize} error={tried && !size} />
         {isLowStock(product) && (
           <p className="text-xs text-amber-700 font-medium">Low stock — only a few pieces remaining.</p>
         )}
@@ -129,7 +132,7 @@ export function ProductInfo({ product }: { product: Product }) {
         <QtyStepper qty={qty} onChange={(q) => setQty(Math.min(q, maxForSize))} max={Math.max(1, maxForSize)} />
       </div>
 
-      {/* ——— পরিপাটি ও অ্যাস্থেটিক এক সমান বাটন ——— */}
+      {/* পরিপাটি এক সমান বাটন দুটি */}
       <div className="grid grid-cols-2 gap-3 pt-2">
         <button
           type="button"
