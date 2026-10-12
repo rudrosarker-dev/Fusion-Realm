@@ -4,10 +4,9 @@
 import { ArrowDown, ArrowRight, Star, Sparkles } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
-import { motion } from "framer-motion";
 import { NewsletterForm } from "@/components/layout/footer";
 import { Reveal } from "@/components/ui/overlays";
-import { Button, Price } from "@/components/ui/primitives";
+import { Price } from "@/components/ui/primitives";
 import { BRAND_CONFIG } from "@/lib/brand.config";
 import { DraggableCarousel } from "./draggable-carousel";
 import type { Product } from "@/lib/types";
@@ -30,16 +29,18 @@ const DEFAULT_BANNERS: BannersConfig = {
 
 /* ————————————————— SECTION 1 — HERO ————————————————— */
 export function Hero({ banner = DEFAULT_BANNERS.hero, content }: { banner?: string; content?: any }) {
-  const eyebrow = content?.heroEyebrow !== undefined ? content.heroEyebrow : "Winter Edit — 2026";
-  const heading = content?.heroHeading !== undefined ? content.heroHeading : "Quiet warmth.\nLasting form.";
-  const body = content?.heroBody !== undefined ? content.heroBody : "Considered layers, tactile knits and outerwear for the colder days. Made to move with you, season after season.";
+  const eyebrow = content?.heroEyebrow || "Winter Edit — 2026";
+  const heading = content?.heroHeading || "Quiet warmth.\nLasting form.";
+  const body =
+    content?.heroBody ||
+    "Considered layers, tactile knits and outerwear for the colder days. Made to move with you, season after season.";
 
   return (
     <section className="relative -mt-16 flex min-h-[100svh] items-end overflow-hidden pt-16 group" aria-label="New season hero">
       <div className="absolute inset-0 origin-center transition-transform duration-1000 ease-out">
-        <Image src={banner} alt={`${BRAND_CONFIG.brandName} Campaign Shoot`} fill priority sizes="100vw" className="object-cover" />
+        <Image src={banner || DEFAULT_BANNERS.hero} alt={`${BRAND_CONFIG.brandName} Campaign Shoot`} fill priority sizes="100vw" className="object-cover" />
       </div>
-      
+
       <div className="absolute inset-0 bg-gradient-to-t from-ink via-ink/45 to-transparent opacity-95" aria-hidden />
       <div className="absolute inset-0 bg-gradient-to-r from-ink/60 via-transparent to-transparent opacity-75" aria-hidden />
 
@@ -89,20 +90,26 @@ export function Hero({ banner = DEFAULT_BANNERS.hero, content }: { banner?: stri
   );
 }
 
-/* ————————————————— VALUE MARQUEE (CMS CONTROLLED) ————————————————— */
+/* ————————————————— VALUE MARQUEE (BULLETPROOF SAFE) ————————————————— */
 export function ValueMarquee({ itemsString }: { itemsString?: string }) {
-  const items = useMemo(() => {
-    if (itemsString && itemsString.trim().length > 0) {
-      return itemsString.split("|").map((s) => s.trim()).filter(Boolean);
-    }
-    return BRAND_CONFIG.marqueeItems;
-  }, [itemsString]);
+  // নিশ্চিত করা হচ্ছে যে কোনো অবস্থাতেই ক্র্যাশ হবে না
+  const rawList = typeof itemsString === "string" && itemsString.trim().length > 0 
+    ? itemsString.split("|") 
+    : (BRAND_CONFIG.marqueeItems || [
+        "Dhaka Atelier Hand-Finished",
+        "Numbered Micro Runs",
+        "Heavyweight Japanese Twill",
+        "Garment Washed Character",
+        "Complimentary Delivery Over ৳15,000",
+      ]);
+
+  const items = rawList.map((s) => String(s).trim()).filter(Boolean);
 
   return (
-    <div className="border-b border-line/50 bg-paper py-4 sm:py-5">
+    <div className="border-b border-line/50 bg-paper py-4 sm:py-5 overflow-hidden">
       <div className="container-x flex flex-wrap items-center justify-center gap-x-6 gap-y-2.5 text-center sm:gap-x-10">
         {items.map((item, index) => (
-          <div key={item} className="flex items-center gap-6 sm:gap-10">
+          <div key={`${item}-${index}`} className="flex items-center gap-6 sm:gap-10">
             <span className="text-[10px] sm:text-[11px] uppercase tracking-[0.26em] text-ink/75 font-semibold font-mono">
               {item}
             </span>
@@ -116,9 +123,11 @@ export function ValueMarquee({ itemsString }: { itemsString?: string }) {
 
 /* ————————————————— SECTION 2 — FEATURED COLLECTION ————————————————— */
 export function FeaturedCollection({ banner = DEFAULT_BANNERS.collection, content }: { banner?: string; content?: any }) {
-  const eyebrow = content?.featuredEyebrow !== undefined ? content.featuredEyebrow : "Featured Collection";
-  const heading = content?.featuredHeading !== undefined ? content.featuredHeading : "The New\nCollection";
-  const body = content?.featuredBody !== undefined ? content.featuredBody : "Carefully developed pieces crafted in luxury cloth — slower construction, nothing decorative. Built to sit alongside every garment you already own.";
+  const eyebrow = content?.featuredEyebrow || "Featured Collection";
+  const heading = content?.featuredHeading || "The New\nCollection";
+  const body =
+    content?.featuredBody ||
+    "Carefully developed pieces crafted in luxury cloth — slower construction, nothing decorative. Built to sit alongside every garment you already own.";
 
   return (
     <section className="container-x py-24 lg:py-36" aria-label="The new collection">
@@ -126,7 +135,7 @@ export function FeaturedCollection({ banner = DEFAULT_BANNERS.collection, conten
         <Reveal className="lg:col-span-7" direction="left">
           <Link href="/collections/new-season" className="group relative block overflow-hidden bg-cream/40 border border-line/60 shadow-sm rounded-xs">
             <div className="relative aspect-[4/5] sm:aspect-[16/11]">
-              <Image src={banner} alt={`Featured Collection — ${BRAND_CONFIG.brandName}`} fill sizes="(max-width: 1024px) 100vw, 58vw" className="object-cover transition-transform duration-700 ease-out group-hover:scale-[1.02]" />
+              <Image src={banner || DEFAULT_BANNERS.collection} alt={`Featured Collection — ${BRAND_CONFIG.brandName}`} fill sizes="(max-width: 1024px) 100vw, 58vw" className="object-cover transition-transform duration-700 ease-out group-hover:scale-[1.02]" />
             </div>
           </Link>
         </Reveal>
@@ -164,7 +173,9 @@ export function FeaturedCollection({ banner = DEFAULT_BANNERS.collection, conten
 }
 
 /* ————————————————— SECTION 3 — SELECTED PIECES ————————————————— */
-export function SelectedPieces({ products }: { products: Product[] }) {
+export function SelectedPieces({ products = [] }: { products?: Product[] }) {
+  if (!products || products.length === 0) return null;
+
   return (
     <section className="bg-cream/25 border-y border-line/50 py-24 lg:py-32" aria-label="Selected pieces">
       <div className="container-x">
@@ -191,8 +202,8 @@ export function SelectedPieces({ products }: { products: Product[] }) {
 /* ————————————————— SECTION 4 — CATEGORY SPLIT ————————————————— */
 export function CategorySplit({ menBanner = DEFAULT_BANNERS.men, womenBanner = DEFAULT_BANNERS.women }: { menBanner?: string; womenBanner?: string }) {
   const cats = [
-    { title: "Men", href: "/shop?gender=men", image: menBanner, alt: "Menswear collection" },
-    { title: "Women", href: "/shop?gender=women", image: womenBanner, alt: "Womenswear collection" },
+    { title: "Men", href: "/shop?gender=men", image: menBanner || DEFAULT_BANNERS.men, alt: "Menswear collection" },
+    { title: "Women", href: "/shop?gender=women", image: womenBanner || DEFAULT_BANNERS.women, alt: "Womenswear collection" },
   ];
   return (
     <section aria-label="Shop by category" className="grid md:grid-cols-2">
@@ -216,9 +227,11 @@ export function CategorySplit({ menBanner = DEFAULT_BANNERS.men, womenBanner = D
 
 /* ————————————————— SECTION 5 — BRAND STORY ————————————————— */
 export function Story({ banner = DEFAULT_BANNERS.story, content }: { banner?: string; content?: any }) {
-  const eyebrow = content?.storyEyebrow !== undefined ? content.storyEyebrow : "Design Philosophy";
-  const heading = content?.storyHeading !== undefined ? content.storyHeading : "Designed for movement.\nBuilt with intention.";
-  const body = content?.storyBody !== undefined ? content.storyBody : `${BRAND_CONFIG.brandName} began with a simple fatigue: closets full of clothes, nothing worth wearing. We make the opposite — a narrow line of garments in heavyweight natural cloth, cut generously and finished slowly.`;
+  const eyebrow = content?.storyEyebrow || "Design Philosophy";
+  const heading = content?.storyHeading || "Designed for movement.\nBuilt with intention.";
+  const body =
+    content?.storyBody ||
+    `${BRAND_CONFIG.brandName} began with a simple fatigue: closets full of clothes, nothing worth wearing. We make the opposite — a narrow line of garments in heavyweight natural cloth, cut generously and finished slowly.`;
 
   return (
     <section className="bg-ink text-paper" aria-label="The brand philosophy">
@@ -256,7 +269,7 @@ export function Story({ banner = DEFAULT_BANNERS.story, content }: { banner?: st
         </div>
         <Reveal className="relative min-h-[380px] lg:min-h-0" direction="left">
           <div className="relative h-full min-h-[400px] overflow-hidden border border-paper/15 shadow-xl rounded-xs">
-            <Image src={banner} alt="Textile detail" fill sizes="(max-width: 1024px) 100vw, 50vw" className="object-cover" />
+            <Image src={banner || DEFAULT_BANNERS.story} alt="Textile detail" fill sizes="(max-width: 1024px) 100vw, 50vw" className="object-cover" />
           </div>
         </Reveal>
       </div>
@@ -266,9 +279,11 @@ export function Story({ banner = DEFAULT_BANNERS.story, content }: { banner?: st
 
 /* ————————————————— SECTION 6 — COLLECTION FEATURE ————————————————— */
 export function CollectionFeature({ banner = DEFAULT_BANNERS.hero, content }: { banner?: string; content?: any }) {
-  const eyebrow = content?.coreEyebrow !== undefined ? content.coreEyebrow : "Permanent Line";
-  const heading = content?.coreHeading !== undefined ? content.coreHeading : "Core 01";
-  const body = content?.coreBody !== undefined ? content.coreBody : "The permanent wardrobe. Seasonless silhouettes in natural tones — restocked continuously, never discounted into noise.";
+  const eyebrow = content?.coreEyebrow || "Permanent Line";
+  const heading = content?.coreHeading || "Core 01";
+  const body =
+    content?.coreBody ||
+    "The permanent wardrobe. Seasonless silhouettes in natural tones — restocked continuously, never discounted into noise.";
 
   return (
     <section className="container-x py-24 lg:py-36" aria-label="Core collection">
@@ -305,7 +320,7 @@ export function CollectionFeature({ banner = DEFAULT_BANNERS.hero, content }: { 
         <Reveal className="order-1 lg:order-2 lg:col-span-8" direction="left">
           <Link href="/collections/core" className="group relative block overflow-hidden bg-cream/40 border border-line/60 rounded-xs shadow-sm">
             <div className="relative aspect-[16/10] sm:aspect-[21/9] lg:aspect-[16/10]">
-              <Image src={banner} alt="Core collection" fill sizes="(max-width: 1024px) 100vw, 66vw" className="object-cover transition-transform duration-700 ease-out group-hover:scale-[1.02]" />
+              <Image src={banner || DEFAULT_BANNERS.hero} alt="Core collection" fill sizes="(max-width: 1024px) 100vw, 66vw" className="object-cover transition-transform duration-700 ease-out group-hover:scale-[1.02]" />
             </div>
           </Link>
         </Reveal>
@@ -339,7 +354,7 @@ export function ProductHighlight({ product }: { product?: Product | null }) {
             <div className="mt-4 flex items-center gap-4">
               <Price amountBDT={product.priceBDT} className="text-2xl font-semibold text-ink" />
               <span className="flex items-center gap-1.5 text-[10px] text-ink/70 font-mono tracking-wider bg-gold/15 px-3 py-1 rounded-full border border-gold/30">
-                <Star className="size-3 fill-gold text-gold" /> {product.rating} ({product.reviews} Reviews)
+                <Star className="size-3 fill-gold text-gold" /> {product.rating || 5.0} ({product.reviews || 0} Reviews)
               </span>
             </div>
           </Reveal>
@@ -370,9 +385,11 @@ export function ProductHighlight({ product }: { product?: Product | null }) {
 
 /* ————————————————— SECTION 8 — NEWSLETTER ————————————————— */
 export function NewsletterSection({ content }: { content?: any }) {
-  const eyebrow = content?.newsletterEyebrow !== undefined ? content.newsletterEyebrow : "Atelier Dispatch";
-  const heading = content?.newsletterHeading !== undefined ? content.newsletterHeading : "Stay in Form";
-  const body = content?.newsletterBody !== undefined ? content.newsletterBody : "New pieces, private restocks and studio notes. Strictly one letter a month — never more, always worth opening.";
+  const eyebrow = content?.newsletterEyebrow || "Atelier Dispatch";
+  const heading = content?.newsletterHeading || "Stay in Form";
+  const body =
+    content?.newsletterBody ||
+    "New pieces, private restocks and studio notes. Strictly one letter a month — never more, always worth opening.";
 
   return (
     <section className="container-x py-24 lg:py-36" aria-label="Newsletter">
