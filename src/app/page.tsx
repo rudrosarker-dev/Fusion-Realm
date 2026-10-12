@@ -18,7 +18,6 @@ import { BRAND_CONFIG } from "@/lib/brand.config";
 import type { Metadata } from "next";
 import type { Product } from "@/lib/types";
 
-// ক্যাশ পুরোপুরি অফ করা হলো যাতে এডমিন থেকে সেভ করলেই ওয়েবসাইটে লাইভ চেঞ্জ আসে
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
 
@@ -54,24 +53,8 @@ async function getSiteConfig() {
       story: "/images/story.jpg",
     },
     homepageMode: "editorial",
-    marqueeItems: "Dhaka Atelier Hand-Finished | Numbered Micro Runs | Heavyweight Japanese Twill | Garment Washed Character | Complimentary Delivery Over ৳15,000",
-    homeContent: {
-      heroEyebrow: "Winter Edit — 2026",
-      heroHeading: "Quiet warmth.\nLasting form.",
-      heroBody: "Considered layers, tactile knits and outerwear for the colder days. Made to move with you, season after season.",
-      featuredEyebrow: "The Winter Edit",
-      featuredHeading: "The New\nCollection",
-      featuredBody: "A considered winter wardrobe in rich texture, quiet colour and enduring silhouettes.",
-      storyEyebrow: "Design Philosophy",
-      storyHeading: "Designed for movement.\nBuilt with intention.",
-      storyBody: "Thoughtful materials, precise construction and garments made to be worn often.",
-      coreEyebrow: "Permanent Line",
-      coreHeading: "Core 01",
-      coreBody: "The permanent uniform. Seasonless garments in heavyweight earth tones — continually restocked, refined, and never discounted.",
-      newsletterEyebrow: "Atelier Dispatch",
-      newsletterHeading: "Notes from the studio",
-      newsletterBody: "New pieces, studio notes and considered updates, delivered occasionally.",
-    },
+    marqueeItems: "",
+    homeContent: {},
   };
 
   try {
@@ -87,11 +70,10 @@ async function getSiteConfig() {
 
     const siteContent = contentRes?.rows?.[0]?.content || {};
     const homepageMode = siteContent.homepageMode || "editorial";
-    const marqueeItems = siteContent.marqueeItems || defaults.marqueeItems;
-    const homeContent = {
-      ...defaults.homeContent,
-      ...(siteContent.homeContent || {}),
-    };
+    
+    // এডমিন থেকে যা দেওয়া আছে সেটাই হুবহু যাবে, ফাঁকা দিলে ফাঁকাই থাকবে
+    const marqueeItems = siteContent.marqueeItems !== undefined ? siteContent.marqueeItems : defaults.marqueeItems;
+    const homeContent = siteContent.homeContent !== undefined ? siteContent.homeContent : {};
 
     return { banners, homepageMode, marqueeItems, homeContent };
   } catch (error) {
