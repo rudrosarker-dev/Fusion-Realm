@@ -1,4 +1,3 @@
-// START OF FILE src/components/product/product-info.tsx
 "use client";
 
 import { Check, ShoppingBag, Truck, Zap } from "lucide-react";
@@ -138,7 +137,7 @@ export function ProductInfo({ product }: { product: Product }) {
           type="button"
           disabled={soldOut || loading !== null}
           onClick={() => addToBag("add")}
-          className="h-12 w-full flex items-center justify-center gap-2 rounded-xs border border-[#0e0d0b] bg-transparent text-[#0e0d0b] text-[11px] uppercase tracking-[0.2em] font-semibold hover:bg-[#0e0d0b] hover:text-[#f6f3eb] transition-colors cursor-pointer disabled:opacity-40"
+          className="inline-flex h-12 w-full items-center justify-center gap-2 rounded-xs border border-ink bg-transparent text-[11px] font-semibold uppercase tracking-[0.2em] text-ink transition-all duration-300 hover:-translate-y-0.5 hover:bg-ink hover:text-paper hover:shadow-[0_4px_16px_rgba(0,0,0,0.12)] active:translate-y-0 active:scale-[0.98] cursor-pointer disabled:pointer-events-none disabled:opacity-40"
         >
           <ShoppingBag className="size-4" strokeWidth={1.5} />
           <span>{loading === "add" ? "Adding..." : soldOut ? "Out of Stock" : "Add to Bag"}</span>
@@ -148,9 +147,9 @@ export function ProductInfo({ product }: { product: Product }) {
           type="button"
           disabled={soldOut || loading !== null}
           onClick={() => addToBag("buy")}
-          className="h-12 w-full flex items-center justify-center gap-2 rounded-xs bg-[#0e0d0b] text-[#f6f3eb] border border-[#0e0d0b] text-[11px] uppercase tracking-[0.2em] font-semibold hover:bg-[#1f1d19] hover:border-[#c5a880] hover:text-[#dfcaa8] transition-colors cursor-pointer shadow-sm disabled:opacity-40"
+          className="inline-flex h-12 w-full items-center justify-center gap-2 rounded-xs border border-ink bg-ink text-[11px] font-semibold uppercase tracking-[0.2em] text-paper shadow-[0_1px_2px_rgba(0,0,0,0.08),0_4px_14px_rgba(0,0,0,0.14)] transition-all duration-300 hover:-translate-y-0.5 hover:border-gold-dark hover:bg-gold-dark hover:shadow-[0_6px_20px_rgba(0,0,0,0.18)] active:translate-y-0 active:scale-[0.98] cursor-pointer disabled:pointer-events-none disabled:opacity-40"
         >
-          <Zap className="size-3.5 fill-[#dfcaa8] text-[#dfcaa8]" />
+          <Zap className="size-3.5 fill-current" />
           <span>{loading === "buy" ? "Processing..." : "Buy Now"}</span>
         </button>
       </div>
@@ -170,4 +169,3 @@ export function ProductInfo({ product }: { product: Product }) {
     </div>
   );
 }
-// END OF FILE src/components/product/product-info.tsx
