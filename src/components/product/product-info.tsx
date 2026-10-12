@@ -1,6 +1,6 @@
 "use client";
 
-import { Check, ShoppingBag, Truck, Zap } from "lucide-react";
+import { Check, Truck } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { Price, QtyStepper } from "@/components/ui/primitives";
@@ -83,7 +83,7 @@ export function ProductInfo({ product }: { product: Product }) {
           <p className="eyebrow !text-gold-dark font-mono font-medium">
             {product.collection === "limited" ? "Limited Edition" : product.collection === "studio" ? "Studio Collection" : product.category}
           </p>
-          <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-ink bg-cream/70 px-2.5 py-1 border border-line rounded-2xs">
+          <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-ink bg-cream/70 px-2.5 py-1 border border-line rounded-none">
             SKU: {product.sku}
           </span>
         </div>
@@ -131,15 +131,14 @@ export function ProductInfo({ product }: { product: Product }) {
         <QtyStepper qty={qty} onChange={(q) => setQty(Math.min(q, maxForSize))} max={Math.max(1, maxForSize)} />
       </div>
 
-      {/* পরিপাটি এক সমান বাটন দুটি */}
+      {/* Editorial Luxury Buttons (No icons, sharp, text expands on hover) */}
       <div className="grid grid-cols-2 gap-3 pt-2">
         <button
           type="button"
           disabled={soldOut || loading !== null}
           onClick={() => addToBag("add")}
-          className="inline-flex h-12 w-full items-center justify-center gap-2 rounded-xs border border-ink bg-transparent text-[11px] font-semibold uppercase tracking-[0.2em] text-ink transition-all duration-300 hover:-translate-y-0.5 hover:bg-ink hover:text-paper hover:shadow-[0_4px_16px_rgba(0,0,0,0.12)] active:translate-y-0 active:scale-[0.98] cursor-pointer disabled:pointer-events-none disabled:opacity-40"
+          className="inline-flex h-12 w-full items-center justify-center rounded-none border border-ink bg-transparent text-[11px] font-bold uppercase tracking-[0.2em] text-ink transition-all duration-500 ease-out hover:bg-ink hover:text-paper hover:tracking-[0.26em] cursor-pointer disabled:pointer-events-none disabled:opacity-40"
         >
-          <ShoppingBag className="size-4" strokeWidth={1.5} />
           <span>{loading === "add" ? "Adding..." : soldOut ? "Out of Stock" : "Add to Bag"}</span>
         </button>
 
@@ -147,9 +146,8 @@ export function ProductInfo({ product }: { product: Product }) {
           type="button"
           disabled={soldOut || loading !== null}
           onClick={() => addToBag("buy")}
-          className="inline-flex h-12 w-full items-center justify-center gap-2 rounded-xs border border-ink bg-ink text-[11px] font-semibold uppercase tracking-[0.2em] text-paper shadow-[0_1px_2px_rgba(0,0,0,0.08),0_4px_14px_rgba(0,0,0,0.14)] transition-all duration-300 hover:-translate-y-0.5 hover:border-gold-dark hover:bg-gold-dark hover:shadow-[0_6px_20px_rgba(0,0,0,0.18)] active:translate-y-0 active:scale-[0.98] cursor-pointer disabled:pointer-events-none disabled:opacity-40"
+          className="inline-flex h-12 w-full items-center justify-center rounded-none border border-transparent bg-ink text-[11px] font-bold uppercase tracking-[0.2em] text-paper transition-all duration-500 ease-out hover:border-ink hover:bg-transparent hover:text-ink hover:tracking-[0.26em] cursor-pointer disabled:pointer-events-none disabled:opacity-40"
         >
-          <Zap className="size-3.5 fill-current" />
           <span>{loading === "buy" ? "Processing..." : "Buy Now"}</span>
         </button>
       </div>
