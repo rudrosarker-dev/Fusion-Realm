@@ -1,4 +1,3 @@
-// START OF FILE src/components/home/sections.tsx
 "use client";
 
 import { ArrowDown, ArrowRight, Star, Sparkles } from "lucide-react";
@@ -29,7 +28,6 @@ const DEFAULT_BANNERS: BannersConfig = {
 
 /* ————————————————— SECTION 1 — HERO ————————————————— */
 export function Hero({ banner = DEFAULT_BANNERS.hero, content }: { banner?: string; content?: any }) {
-  // যদি content অবজেক্টে ফিল্ড থাকে এবং সেটা খালি স্ট্রিং "" হয়, তাহলে ফাঁকাই থাকবে (ডিফল্ট দেখাবে না)
   const eyebrow = content?.heroEyebrow !== undefined ? content.heroEyebrow : "";
   const heading = content?.heroHeading !== undefined ? content.heroHeading : "";
   const body = content?.heroBody !== undefined ? content.heroBody : "";
@@ -67,13 +65,13 @@ export function Hero({ banner = DEFAULT_BANNERS.hero, content }: { banner?: stri
           <div className="mt-10 flex flex-wrap items-center gap-4 sm:gap-5">
             <Link
               href="/shop"
-              className="inline-flex items-center justify-center h-12 px-8 text-xs uppercase tracking-[0.2em] font-semibold text-ink bg-paper border border-white hover:bg-gold-light hover:text-ink transition-all duration-300 shadow-sm cursor-pointer rounded-xs"
+              className="group relative inline-flex h-12 items-center justify-center overflow-hidden rounded-xs bg-paper px-8 text-xs font-semibold uppercase tracking-[0.2em] text-ink shadow-[0_1px_2px_rgba(0,0,0,0.06),0_4px_12px_rgba(0,0,0,0.08)] transition-all duration-300 hover:-translate-y-0.5 hover:bg-gold-light hover:shadow-[0_4px_20px_rgba(0,0,0,0.12)] active:translate-y-0 active:scale-[0.98] cursor-pointer"
             >
               Explore Collection
             </Link>
             <Link
               href="/about"
-              className="inline-flex items-center justify-center h-12 px-7 text-xs uppercase tracking-[0.2em] font-medium text-paper border border-white/40 bg-black/30 backdrop-blur-sm hover:border-gold hover:text-gold-light transition-all duration-300 cursor-pointer rounded-xs"
+              className="inline-flex h-12 items-center justify-center rounded-xs border border-white/50 bg-white/10 px-7 text-xs font-medium uppercase tracking-[0.2em] text-paper backdrop-blur-md transition-all duration-300 hover:border-gold-light hover:bg-white/15 hover:text-gold-light hover:-translate-y-0.5 active:translate-y-0 active:scale-[0.98] cursor-pointer"
             >
               The Atelier Story
             </Link>
@@ -91,7 +89,6 @@ export function Hero({ banner = DEFAULT_BANNERS.hero, content }: { banner?: stri
 
 /* ————————————————— VALUE MARQUEE (CMS CONTROLLED) ————————————————— */
 export function ValueMarquee({ itemsString }: { itemsString?: string }) {
-  // যদি এডমিন প্যানেল থেকে ফাঁকা রাখা হয়, তাহলে মারকুই সেকশনই দেখাবে না
   if (itemsString !== undefined && itemsString.trim() === "") {
     return null;
   }
@@ -157,10 +154,10 @@ export function FeaturedCollection({ banner = DEFAULT_BANNERS.collection, conten
           <Reveal delay={260}>
             <Link
               href="/collections/new-season"
-              className="mt-8 inline-flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.22em] text-ink hover:text-gold-dark transition-colors pb-1 border-b border-ink/40 hover:border-gold-dark"
+              className="mt-8 group inline-flex items-center gap-2 border-b border-ink/35 pb-1 text-xs font-semibold uppercase tracking-[0.22em] text-ink transition-all duration-300 hover:border-gold-dark hover:text-gold-dark"
             >
               <span>Explore Collection</span>
-              <ArrowRight className="size-3.5" />
+              <ArrowRight className="size-3.5 transition-transform duration-300 group-hover:translate-x-0.5" />
             </Link>
           </Reveal>
         </div>
@@ -184,9 +181,9 @@ export function SelectedPieces({ products = [] }: { products?: Product[] }) {
             </div>
           </Reveal>
           <Reveal delay={100} className="sm:pr-24">
-            <Link href="/shop" className="text-[11px] font-semibold uppercase tracking-[0.2em] text-ink hover:text-gold-dark transition-colors flex items-center gap-1.5">
+            <Link href="/shop" className="group text-[11px] font-semibold uppercase tracking-[0.2em] text-ink hover:text-gold-dark transition-colors flex items-center gap-1.5">
               <span>View All Pieces</span>
-              <ArrowRight className="size-3.5" />
+              <ArrowRight className="size-3.5 transition-transform duration-300 group-hover:translate-x-0.5" />
             </Link>
           </Reveal>
         </div>
@@ -213,7 +210,7 @@ export function CategorySplit({ menBanner = DEFAULT_BANNERS.men, womenBanner = D
           <div className="absolute inset-x-0 bottom-0 flex flex-col justify-end p-8 sm:p-14 text-paper">
             <h3 className="font-display text-3xl sm:text-4xl lg:text-5xl font-light tracking-tight">{c.title}</h3>
             <p className="mt-3 inline-flex items-center gap-2 text-[11px] font-mono font-semibold uppercase tracking-[0.22em] text-gold-light">
-              Explore {c.title} <ArrowRight className="size-3.5" />
+              Explore {c.title} <ArrowRight className="size-3.5 transition-transform duration-300 group-hover:translate-x-0.5" />
             </p>
           </div>
         </Link>
@@ -255,7 +252,7 @@ export function Story({ banner = DEFAULT_BANNERS.story, content }: { banner?: st
             <div className="mt-10">
               <Link
                 href="/about"
-                className="inline-flex items-center justify-center h-12 px-8 text-xs uppercase tracking-[0.2em] font-semibold text-ink bg-paper hover:bg-gold-light transition-all duration-300 rounded-xs cursor-pointer"
+                className="inline-flex h-12 items-center justify-center rounded-xs bg-paper px-8 text-xs font-semibold uppercase tracking-[0.2em] text-ink shadow-[0_1px_2px_rgba(0,0,0,0.06),0_4px_12px_rgba(0,0,0,0.08)] transition-all duration-300 hover:-translate-y-0.5 hover:bg-gold-light hover:shadow-[0_4px_20px_rgba(0,0,0,0.12)] active:translate-y-0 active:scale-[0.98] cursor-pointer"
               >
                 Our Story
               </Link>
@@ -303,7 +300,7 @@ export function CollectionFeature({ banner = DEFAULT_BANNERS.hero, content }: { 
             <div className="mt-8">
               <Link
                 href="/collections/core"
-                className="inline-flex items-center justify-center h-12 px-7 text-xs uppercase tracking-[0.2em] font-semibold text-ink border border-ink hover:bg-ink hover:text-paper transition-all duration-300 rounded-xs"
+                className="inline-flex h-12 items-center justify-center rounded-xs border border-ink bg-transparent px-7 text-xs font-semibold uppercase tracking-[0.2em] text-ink transition-all duration-300 hover:-translate-y-0.5 hover:bg-ink hover:text-paper hover:shadow-[0_4px_16px_rgba(0,0,0,0.12)] active:translate-y-0 active:scale-[0.98] cursor-pointer"
               >
                 View Core Collection
               </Link>
@@ -358,13 +355,13 @@ export function ProductHighlight({ product }: { product?: Product | null }) {
             <div className="mt-9 flex flex-wrap items-center gap-4">
               <Link
                 href={`/products/${product.slug}`}
-                className="inline-flex items-center justify-center h-12 px-8 text-xs uppercase tracking-[0.2em] font-semibold text-paper bg-ink hover:bg-gold-dark transition-all duration-300 rounded-xs shadow-sm"
+                className="inline-flex h-12 items-center justify-center rounded-xs bg-ink px-8 text-xs font-semibold uppercase tracking-[0.2em] text-paper shadow-[0_1px_2px_rgba(0,0,0,0.08),0_4px_14px_rgba(0,0,0,0.12)] transition-all duration-300 hover:-translate-y-0.5 hover:bg-gold-dark hover:shadow-[0_6px_20px_rgba(0,0,0,0.16)] active:translate-y-0 active:scale-[0.98] cursor-pointer"
               >
                 Shop Now
               </Link>
               <Link
                 href="/shop"
-                className="inline-flex items-center justify-center h-12 px-7 text-xs uppercase tracking-[0.2em] font-medium text-ink border border-ink/40 hover:border-ink transition-all duration-300 rounded-xs"
+                className="inline-flex h-12 items-center justify-center rounded-xs border border-ink/35 bg-transparent px-7 text-xs font-medium uppercase tracking-[0.2em] text-ink transition-all duration-300 hover:-translate-y-0.5 hover:border-ink hover:bg-ink/[0.03] active:translate-y-0 active:scale-[0.98] cursor-pointer"
               >
                 View All Pieces
               </Link>
@@ -400,4 +397,3 @@ export function NewsletterSection({ content }: { content?: any }) {
     </section>
   );
 }
-// END OF FILE src/components/home/sections.tsx
