@@ -10,7 +10,6 @@ import { CustomCursor } from "@/components/ui/custom-cursor";
 import { WhatsAppWidget } from "@/components/ui/whatsapp-widget";
 import { FacebookPixel } from "@/components/analytics/facebook-pixel";
 import { ScrollToTopOnRefresh } from "@/components/layout/scroll-to-top-on-refresh";
-import { PwaInstallPrompt } from "@/components/ui/pwa-install-prompt";
 import { BRAND_CONFIG } from "@/lib/brand.config";
 import { Providers } from "@/lib/store";
 import "./globals.css";
@@ -111,7 +110,6 @@ export default function RootLayout({ children }: { children: ReactNode }) {
           {/* ফুটার ও ফ্লোটিং উইজেটসমূহ */}
           <Footer />
           <WhatsAppWidget />
-          <PwaInstallPrompt />
           <SearchOverlay />
           <CartDrawer />
           <QuickViewHost />
