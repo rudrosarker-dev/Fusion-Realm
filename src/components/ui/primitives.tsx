@@ -18,7 +18,7 @@ type BtnVariant = "primary" | "outline" | "ghost" | "inverse" | "gold";
 type BtnSize = "sm" | "md" | "lg";
 
 const btnBase =
-  "relative inline-flex items-center justify-center gap-2 font-medium uppercase tracking-[0.2em] transition-all duration-300 disabled:cursor-not-allowed disabled:opacity-40 select-none cursor-pointer rounded-xs overflow-hidden";
+  "relative inline-flex items-center justify-center gap-2 uppercase tracking-[0.2em] transition-all duration-300 disabled:cursor-not-allowed disabled:pointer-events-none disabled:opacity-40 select-none cursor-pointer rounded-xs overflow-hidden";
 
 const btnSizes: Record<BtnSize, string> = {
   sm: "h-9 px-5 text-[10px]",
@@ -26,17 +26,18 @@ const btnSizes: Record<BtnSize, string> = {
   lg: "h-12 px-9 text-[12px]",
 };
 
+// গ্লোবাল বাটন স্টাইল আপডেট করা হয়েছে - সব জায়গায় প্রিমিয়াম লুক পাওয়ার জন্য
 const btnVariants: Record<BtnVariant, string> = {
   primary:
-    "bg-[#0e0d0b] text-[#f6f3eb] border border-[#2d2924] hover:bg-[#1a1815] hover:border-[#c5a880] hover:text-[#dfcaa8] shadow-sm active:scale-[0.99]",
+    "bg-ink text-paper font-semibold shadow-[0_1px_2px_rgba(0,0,0,0.08),0_4px_14px_rgba(0,0,0,0.14)] hover:bg-gold-dark hover:shadow-[0_6px_20px_rgba(0,0,0,0.18)] hover:-translate-y-0.5 active:translate-y-0 active:scale-[0.98] border border-ink",
   inverse:
-    "bg-[#f6f3eb] text-[#0e0d0b] border border-[#e0d9ca] hover:bg-[#ffffff] hover:border-[#c5a880] shadow-sm active:scale-[0.99]",
+    "bg-paper text-ink font-semibold shadow-[0_1px_2px_rgba(0,0,0,0.06),0_4px_12px_rgba(0,0,0,0.08)] hover:bg-gold-light hover:shadow-[0_4px_20px_rgba(0,0,0,0.12)] hover:-translate-y-0.5 active:translate-y-0 active:scale-[0.98] border border-transparent",
   outline:
-    "border border-[#0e0d0b]/30 bg-transparent text-[#0e0d0b] hover:border-[#0e0d0b] hover:bg-[#0e0d0b] hover:text-[#f6f3eb] active:scale-[0.99]",
+    "bg-transparent text-ink font-semibold border border-ink hover:bg-ink hover:text-paper hover:shadow-[0_4px_16px_rgba(0,0,0,0.12)] hover:-translate-y-0.5 active:translate-y-0 active:scale-[0.98]",
   ghost:
-    "bg-transparent text-[#0e0d0b] hover:text-[#9e7f55] border-b border-[#0e0d0b]/30 hover:border-[#9e7f55] rounded-none px-0 tracking-[0.22em]",
+    "bg-transparent text-ink font-medium hover:text-gold-dark border-b border-ink/35 hover:border-gold-dark rounded-none px-0 pb-1 tracking-[0.22em] shadow-none",
   gold:
-    "bg-gradient-to-b from-[#dfcaa8] to-[#c5a880] text-[#0e0d0b] font-semibold border border-[#b8976c] hover:brightness-105 shadow-sm active:scale-[0.99]",
+    "bg-gradient-to-b from-[#dfcaa8] to-[#c5a880] text-ink font-semibold border border-[#b8976c] hover:brightness-105 shadow-[0_1px_2px_rgba(0,0,0,0.06),0_4px_12px_rgba(0,0,0,0.08)] hover:shadow-[0_4px_20px_rgba(0,0,0,0.12)] hover:-translate-y-0.5 active:translate-y-0 active:scale-[0.98]",
 };
 
 interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
