@@ -14,26 +14,27 @@ import { ShopClient } from "@/components/shop/shop-client";
 import { desc, sql } from "drizzle-orm";
 import { db } from "@/db";
 import { products } from "@/db/schema";
+import { BRAND_CONFIG } from "@/lib/brand.config";
 import type { Metadata } from "next";
 import type { Product } from "@/lib/types";
 
-export const revalidate = 0; 
+export const revalidate = 0;
 
 export const metadata: Metadata = {
-  title: "Tholvex Studio — Considered Garments for Everyday Movement",
+  title: `${BRAND_CONFIG.brandName} — Considered Garments for Everyday Movement`,
   description:
     "Heavyweight jersey, tailored wool and considered outerwear. An independent fashion house designing quiet, precise garments in Dhaka.",
   openGraph: {
-    title: "Tholvex Studio — Considered Garments",
+    title: `${BRAND_CONFIG.brandName} — Considered Garments`,
     description: "An independent fashion house designing quiet, precise garments in Dhaka.",
     url: "https://tholvexstudio.vercel.app",
-    siteName: "Tholvex Studio",
+    siteName: BRAND_CONFIG.brandName,
     images: [
       {
-        url: "/images/hero.jpg", 
+        url: "/images/hero.jpg",
         width: 1200,
         height: 630,
-        alt: "Tholvex Studio New Season",
+        alt: `${BRAND_CONFIG.brandName} New Season`,
       },
     ],
     locale: "en_US",
@@ -51,6 +52,7 @@ async function getSiteConfig() {
       story: "/images/story.jpg",
     },
     homepageMode: "editorial",
+    marqueeItems: "Dhaka Atelier Hand-Finished | Numbered Micro Runs | Heavyweight Japanese Twill | Garment Washed Character | Complimentary Delivery Over ৳15,000",
     homeContent: {
       heroEyebrow: "Winter Edit — 2026",
       heroHeading: "Quiet warmth.\nLasting form.",
@@ -72,24 +74,26 @@ async function getSiteConfig() {
 
   try {
     const [bannerRes, contentRes]: any = await Promise.all([
-      db.execute(sql`SELECT banners FROM store_banners WHERE id = 'main_banners' LIMIT 1;`),
-      db.execute(sql`SELECT content FROM store_content WHERE id = 'site_content' LIMIT 1;`),
+      db.execute(sql`SELECT banners FROM store_banners WHERE id = 'main_banners' LIMIT 1;`).catch(() => ({ rows: [] })),
+      db.execute(sql`SELECT content FROM store_content WHERE id = 'site_content' LIMIT 1;`).catch(() => ({ rows: [] })),
     ]);
 
     const banners = {
       ...defaults.banners,
-      ...(bannerRes.rows?.[0]?.banners || {}),
+      ...(bannerRes?.rows?.[0]?.banners || {}),
     };
 
-    const siteContent = contentRes.rows?.[0]?.content || {};
+    const siteContent = contentRes?.rows?.[0]?.content || {};
     const homepageMode = siteContent.homepageMode || "editorial";
+    const marqueeItems = siteContent.marqueeItems || defaults.marqueeItems;
     const homeContent = {
       ...defaults.homeContent,
       ...(siteContent.homeContent || {}),
     };
 
-    return { banners, homepageMode, homeContent };
-  } catch {
+    return { banners, homepageMode, marqueeItems, homeContent };
+  } catch (error) {
+    console.error("Site config fallback error:", error);
     return defaults;
   }
 }
@@ -108,7 +112,7 @@ async function getHomeProducts(): Promise<Product[]> {
         priceBDT: p.priceBDT,
         compareAtBDT: p.compareAtBDT ?? undefined,
         shortDescription: p.shortDescription || `${p.name} crafted in luxury cloth.`,
-        description: p.description || `${p.name} by Tholvex Studio.`,
+        description: p.description || `${p.name} by ${BRAND_CONFIG.brandName}.`,
         material: p.material || "100% Combed Cotton.",
         fit: p.fit || "Relaxed fit.",
         care: (p.care as any) || ["Machine wash cold"],
@@ -132,24 +136,14 @@ async function getHomeProducts(): Promise<Product[]> {
 }
 
 export default async function HomePage() {
-  const [{ banners, homepageMode, homeContent }, allProducts] = await Promise.all([
+  const [{ banners, homepageMode, marqueeItems, homeContent }, allProducts] = await Promise.all([
     getSiteConfig(),
     getHomeProducts(),
   ]);
 
-  const jsonLd = {
-    "@context": "https://schema.org",
-    "@type": "Organization",
-    name: "Tholvex Studio",
-    url: "https://tholvexstudio.vercel.app",
-    logo: "https://tholvexstudio.vercel.app/icon.png",
-    description: "Independent fashion house designing quiet, precise garments in Dhaka.",
-  };
-
   if (homepageMode === "direct-shop") {
     return (
       <div className="pt-16 bg-cream">
-        <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
         <ShopClient initial={{}} serverProducts={allProducts} />
       </div>
     );
@@ -161,10 +155,8 @@ export default async function HomePage() {
 
   return (
     <main className="bg-paper text-ink min-h-screen">
-      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
-      
       <Hero banner={banners.hero} content={homeContent} />
-      <ValueMarquee />
+      <ValueMarquee itemsString={marqueeItems} />
       <FeaturedCollection banner={banners.collection} content={homeContent} />
       {selected.length > 0 && <SelectedPieces products={selected} />}
       <CategorySplit menBanner={banners.men} womenBanner={banners.women} />

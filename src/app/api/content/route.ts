@@ -4,11 +4,13 @@ import { revalidatePath } from "next/cache";
 import { sql } from "drizzle-orm";
 import { db } from "@/db";
 import { LEGAL } from "@/lib/data/content";
+import { BRAND_CONFIG } from "@/lib/brand.config";
 
 export const dynamic = "force-dynamic";
 
 const DEFAULT_CONTENT = {
   homepageMode: "editorial",
+  marqueeItems: BRAND_CONFIG.marqueeItems.join(" | "),
   homeContent: {
     heroEyebrow: "Winter Edit — 2026",
     heroHeading: "Quiet warmth.\nLasting form.",
@@ -100,9 +102,10 @@ export async function GET() {
         content: {
           about: { ...DEFAULT_CONTENT.about, ...(data.about || {}) },
           legal: { ...DEFAULT_CONTENT.legal, ...(data.legal || {}) },
-          socials: { ...DEFAULT_CONTENT.socials, ...(data.socials || {}) },
+          socials: { ...DEFAULT_CONFIG_SOCIALS(data.socials) },
           faqs: Array.isArray(data.faqs) && data.faqs.length > 0 ? data.faqs : DEFAULT_CONTENT.faqs,
           homepageMode: data.homepageMode || "editorial",
+          marqueeItems: data.marqueeItems || DEFAULT_CONTENT.marqueeItems,
           homeContent: { ...(DEFAULT_CONTENT as any).homeContent, ...(data.homeContent || {}) },
           shopContent: { ...(DEFAULT_CONTENT as any).shopContent, ...(data.shopContent || {}) },
         },
@@ -114,6 +117,10 @@ export async function GET() {
     console.error("Content fetch error:", error);
     return NextResponse.json({ success: true, content: DEFAULT_CONTENT });
   }
+}
+
+function DEFAULT_CONFIG_SOCIALS(socialsData: any) {
+  return { ...DEFAULT_CONTENT.socials, ...(socialsData || {}) };
 }
 
 export async function POST(req: NextRequest) {
@@ -136,22 +143,14 @@ export async function POST(req: NextRequest) {
         updated_at = NOW();
     `);
 
-    // 🔥 CRITICAL: bust cache so storefront reflects CMS instantly
     revalidatePath("/", "layout");
-    revalidatePath("/privacy");
-    revalidatePath("/terms");
-    revalidatePath("/shipping-policy");
-    revalidatePath("/return-policy");
-    revalidatePath("/cookies");
-    revalidatePath("/faq");
     revalidatePath("/about");
     revalidatePath("/shop");
     revalidatePath("/contact");
-    revalidatePath("/journal");
 
     return NextResponse.json({
       success: true,
-      message: "Website content & socials updated live!",
+      message: "Website content & settings updated live!",
     });
   } catch (error) {
     console.error("Content save error:", error);
