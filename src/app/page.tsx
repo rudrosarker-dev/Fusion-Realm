@@ -18,6 +18,8 @@ import { BRAND_CONFIG } from "@/lib/brand.config";
 import type { Metadata } from "next";
 import type { Product } from "@/lib/types";
 
+// ক্যাশ পুরোপুরি অফ করা হলো যাতে এডমিন থেকে সেভ করলেই ওয়েবসাইটে লাইভ চেঞ্জ আসে
+export const dynamic = "force-dynamic";
 export const revalidate = 0;
 
 export const metadata: Metadata = {
@@ -60,7 +62,7 @@ async function getSiteConfig() {
       featuredEyebrow: "The Winter Edit",
       featuredHeading: "The New\nCollection",
       featuredBody: "A considered winter wardrobe in rich texture, quiet colour and enduring silhouettes.",
-      storyEyebrow: "The Atelier Philosophy",
+      storyEyebrow: "Design Philosophy",
       storyHeading: "Designed for movement.\nBuilt with intention.",
       storyBody: "Thoughtful materials, precise construction and garments made to be worn often.",
       coreEyebrow: "Permanent Line",
@@ -93,7 +95,7 @@ async function getSiteConfig() {
 
     return { banners, homepageMode, marqueeItems, homeContent };
   } catch (error) {
-    console.error("Site config fallback error:", error);
+    console.error("Site config query error:", error);
     return defaults;
   }
 }
