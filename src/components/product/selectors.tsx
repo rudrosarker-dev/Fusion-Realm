@@ -34,12 +34,12 @@ export function SizeSelector({
               disabled={unavailable}
               onClick={() => onChange(v.size)}
               className={cn(
-                "relative flex h-11 min-w-12 items-center justify-center border px-3 text-xs font-mono font-semibold uppercase tracking-wider transition-all duration-200 cursor-pointer rounded-xs shadow-2xs",
+                "relative flex h-11 min-w-12 items-center justify-center border px-3 text-xs font-mono font-semibold uppercase tracking-wider transition-colors duration-200 cursor-pointer rounded-xs",
                 selected
-                  ? "border-gold bg-ink text-gold-light shadow-md"
-                  : "border-line bg-paper/60 hover:border-gold hover:text-[#a68352]",
-                unavailable && "cursor-not-allowed text-fog/50 bg-cream/30 hover:border-line line-through",
-                error && !value && "border-error/80"
+                  ? "border-[#0e0d0b] bg-[#0e0d0b] text-[#f6f3eb]"
+                  : "border-line bg-paper hover:border-ink text-ink",
+                unavailable && "cursor-not-allowed text-fog/40 bg-cream/40 line-through hover:border-line",
+                error && !value && "border-error"
               )}
             >
               {v.size}
@@ -76,11 +76,11 @@ export function ColorSelector({
               title={c.name}
               onClick={() => onChange(c.name)}
               className={cn(
-                "flex size-8 items-center justify-center border transition-all duration-200 cursor-pointer rounded-xs",
-                selected ? "border-gold ring-1 ring-gold/40 shadow-xs" : "border-transparent hover:border-line"
+                "flex size-8 items-center justify-center border transition-colors duration-200 cursor-pointer rounded-xs",
+                selected ? "border-[#0e0d0b] ring-1 ring-[#0e0d0b]" : "border-transparent hover:border-line"
               )}
             >
-              <span className="size-5 border border-ink/10 rounded-2xs" style={{ backgroundColor: c.hex }} />
+              <span className="size-5 border border-ink/15 rounded-2xs" style={{ backgroundColor: c.hex }} />
             </button>
           );
         })}
@@ -101,6 +101,7 @@ const GUIDE = {
   ],
 };
 
+/* স্পষ্ট ও পড়া যায় এমন সাইজ চার্ট বাটন */
 export function SizeGuideButton() {
   const [open, setOpen] = useState(false);
   return (
@@ -108,10 +109,10 @@ export function SizeGuideButton() {
       <button
         type="button"
         onClick={() => setOpen(true)}
-        className="inline-flex items-center gap-1.5 text-[10px] font-mono font-semibold uppercase tracking-wider text-ink border border-line bg-paper/70 px-2.5 py-1 hover:border-gold hover:text-[#a68352] transition-colors cursor-pointer rounded-xs shadow-2xs"
+        className="inline-flex items-center gap-1.5 text-[11px] font-mono font-semibold uppercase tracking-wider text-ink border border-ink/40 bg-cream/50 px-3 py-1.5 hover:bg-ink hover:text-paper hover:border-ink transition-colors cursor-pointer rounded-xs"
       >
-        <Ruler className="size-3 text-[#a68352]" strokeWidth={1.5} />
-        Size Chart
+        <Ruler className="size-3.5 text-gold-dark" strokeWidth={1.75} />
+        <span>Size Chart</span>
       </button>
       <Modal open={open} onClose={() => setOpen(false)} title="Size Guide" wide>
         <p className="mb-6 text-sm leading-relaxed text-ash">
@@ -146,6 +147,7 @@ export function SizeGuideButton() {
   );
 }
 
+/* স্পষ্ট ও পড়া যায় এমন স্মার্ট সাইজ রেকমেন্ডার বাটন */
 export function SmartSizeRecommender({ onSelectSize }: { onSelectSize: (size: string) => void }) {
   const [open, setOpen] = useState(false);
   const [feet, setFeet] = useState(5);
@@ -202,10 +204,10 @@ export function SmartSizeRecommender({ onSelectSize }: { onSelectSize: (size: st
           setOpen(true);
           setRecommended(null);
         }}
-        className="inline-flex items-center gap-1.5 text-[10px] font-mono font-semibold uppercase tracking-wider text-[#a68352] border border-[#a68352]/40 bg-[#a68352]/10 px-2.5 py-1 hover:bg-[#a68352]/20 transition-colors cursor-pointer rounded-xs shadow-2xs"
+        className="inline-flex items-center gap-1.5 text-[11px] font-mono font-semibold uppercase tracking-wider text-ink border border-gold-dark/60 bg-gold/15 px-3 py-1.5 hover:bg-gold hover:text-ink transition-colors cursor-pointer rounded-xs"
       >
-        <Sparkles className="size-3 text-[#a68352]" />
-        Find My Size
+        <Sparkles className="size-3.5 text-gold-dark" />
+        <span>Find My Size</span>
       </button>
 
       <Modal open={open} onClose={() => setOpen(false)} title="Smart Size Recommender">
@@ -261,7 +263,7 @@ export function SmartSizeRecommender({ onSelectSize }: { onSelectSize: (size: st
           </form>
 
           {recommended && (
-            <div className="border-2 border-ink bg-cream/70 p-5 space-y-3">
+            <div className="border border-ink bg-cream/70 p-5 space-y-3">
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-[10px] uppercase font-mono tracking-wider text-fog">Recommended Silhouette</p>
