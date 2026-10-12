@@ -18,8 +18,8 @@ export function ProductInfo({ product }: { product: Product }) {
   const { setCartOpen, currency } = useUI();
   const { push } = useToast();
 
-  const [size, setSize] = useState<string | null>(product.sizes.length === 1 ? product.sizes[0].size : null);
-  const [color, setColor] = useState(product.colors[0]?.name ?? "");
+  const [size, setSize] = useState<string | null>(product.sizes?.length === 1 ? product.sizes[0].size : null);
+  const [color, setColor] = useState(product.colors?.[0]?.name ?? "Default");
   const [qty, setQty] = useState(1);
   const [tried, setTried] = useState(false);
   const [loading, setLoading] = useState<"add" | "buy" | null>(null);
@@ -35,7 +35,7 @@ export function ProductInfo({ product }: { product: Product }) {
 
   const soldOut = isSoldOut(product);
   const stock = stockLabel(product);
-  const maxForSize = product.sizes.find((s) => s.size === size)?.stock ?? 99;
+  const maxForSize = product.sizes?.find((s) => s.size === size)?.stock ?? 99;
 
   const addToBag = (mode: "add" | "buy") => {
     if (!size) {
@@ -59,7 +59,7 @@ export function ProductInfo({ product }: { product: Product }) {
         slug: product.slug,
         name: product.name,
         priceBDT: product.priceBDT,
-        image: product.images[0].src,
+        image: product.images?.[0]?.src || "/images/product-tee.jpg",
         size: size!,
         color,
         qty,
@@ -71,7 +71,7 @@ export function ProductInfo({ product }: { product: Product }) {
         push("success", `${product.name} added to your bag.`);
         setCartOpen(true);
       }
-    }, 350);
+    }, 250);
   };
 
   return (
@@ -129,13 +129,13 @@ export function ProductInfo({ product }: { product: Product }) {
         <QtyStepper qty={qty} onChange={(q) => setQty(Math.min(q, maxForSize))} max={Math.max(1, maxForSize)} />
       </div>
 
-      {/* ——— অ্যাস্থেটিক অ্যান্ড প্রিমিয়াম বাটনস ——— */}
-      <div className="grid grid-cols-2 gap-3.5 pt-2">
+      {/* ——— পরিপাটি ও অ্যাস্থেটিক এক সমান বাটন ——— */}
+      <div className="grid grid-cols-2 gap-3 pt-2">
         <button
           type="button"
           disabled={soldOut || loading !== null}
           onClick={() => addToBag("add")}
-          className="h-12 w-full flex items-center justify-center gap-2.5 rounded-xs border border-ink bg-transparent text-ink text-xs uppercase tracking-[0.18em] font-semibold hover:bg-ink hover:text-paper transition-all duration-300 cursor-pointer disabled:opacity-40"
+          className="h-12 w-full flex items-center justify-center gap-2 rounded-xs border border-[#0e0d0b] bg-transparent text-[#0e0d0b] text-[11px] uppercase tracking-[0.2em] font-semibold hover:bg-[#0e0d0b] hover:text-[#f6f3eb] transition-colors cursor-pointer disabled:opacity-40"
         >
           <ShoppingBag className="size-4" strokeWidth={1.5} />
           <span>{loading === "add" ? "Adding..." : soldOut ? "Out of Stock" : "Add to Bag"}</span>
@@ -145,9 +145,9 @@ export function ProductInfo({ product }: { product: Product }) {
           type="button"
           disabled={soldOut || loading !== null}
           onClick={() => addToBag("buy")}
-          className="h-12 w-full flex items-center justify-center gap-2 rounded-xs bg-ink text-paper text-xs uppercase tracking-[0.18em] font-semibold hover:bg-ash hover:border-gold transition-all duration-300 cursor-pointer shadow-md disabled:opacity-40 border border-transparent"
+          className="h-12 w-full flex items-center justify-center gap-2 rounded-xs bg-[#0e0d0b] text-[#f6f3eb] border border-[#0e0d0b] text-[11px] uppercase tracking-[0.2em] font-semibold hover:bg-[#1f1d19] hover:border-[#c5a880] hover:text-[#dfcaa8] transition-colors cursor-pointer shadow-sm disabled:opacity-40"
         >
-          <Zap className="size-3.5 fill-gold-light text-gold-light" />
+          <Zap className="size-3.5 fill-[#dfcaa8] text-[#dfcaa8]" />
           <span>{loading === "buy" ? "Processing..." : "Buy Now"}</span>
         </button>
       </div>
