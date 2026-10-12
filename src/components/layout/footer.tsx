@@ -1,9 +1,11 @@
 // START OF FILE src/components/layout/footer.tsx
 "use client";
 
+import { ArrowRight, Check } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
+import { cn } from "@/lib/utils";
 import { BRAND_CONFIG } from "@/lib/brand.config";
 
 const InstagramIcon = ({ className }: { className?: string }) => (
@@ -19,6 +21,70 @@ const FacebookIcon = ({ className }: { className?: string }) => (
     <path d="M18 2h-3a5 5 0 0 0-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 0 1 1-1h3z" />
   </svg>
 );
+
+// হোমপেজের নিউজলেটার সেকশনের জন্য এক্সপোর্ট
+export function NewsletterForm({ inverse }: { inverse?: boolean }) {
+  const [state, setState] = useState<"idle" | "error" | "done">("idle");
+  const [email, setEmail] = useState("");
+
+  if (state === "done") {
+    return (
+      <p className={cn("flex items-center justify-center gap-2 text-sm font-medium", inverse ? "text-gold-light" : "text-emerald-700")} role="status">
+        <span className="flex size-6 items-center justify-center rounded-full bg-gold/20">
+          <Check className="size-3.5 text-gold" strokeWidth={2} />
+        </span>
+        Thank you — you are on the list.
+      </p>
+    );
+  }
+
+  return (
+    <form
+      noValidate
+      onSubmit={(e) => {
+        e.preventDefault();
+        setState(/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(email) ? "done" : "error");
+      }}
+      className="w-full"
+    >
+      <div
+        className={cn(
+          "flex items-center border-b transition-all duration-300",
+          inverse ? "border-paper/25 focus-within:border-gold" : "border-ink/25 focus-within:border-gold-dark"
+        )}
+      >
+        <label htmlFor={inverse ? "nl-footer" : "nl-home"} className="sr-only">
+          Email address
+        </label>
+        <input
+          id={inverse ? "nl-footer" : "nl-home"}
+          type="email"
+          required
+          value={email}
+          onChange={(e) => {
+            setEmail(e.target.value);
+            setState("idle");
+          }}
+          placeholder="Enter your email address..."
+          className={cn("h-12 flex-1 bg-transparent text-sm outline-none placeholder:text-current placeholder:opacity-40 transition-colors", inverse && "text-paper")}
+        />
+        <button
+          type="submit"
+          aria-label="Subscribe"
+          className={cn("group flex items-center gap-2 pl-4 pr-1 text-[11px] font-semibold uppercase tracking-[0.2em] transition-all duration-300 cursor-pointer", inverse ? "text-gold-light hover:text-paper" : "text-ink hover:text-gold-dark")}
+        >
+          Subscribe
+          <ArrowRight className="size-4 transition-transform duration-300 group-hover:translate-x-1" strokeWidth={1.5} />
+        </button>
+      </div>
+      {state === "error" && (
+        <p role="alert" className={cn("mt-2 text-xs", inverse ? "text-[#e08a78]" : "text-error")}>
+          Please enter a valid email address.
+        </p>
+      )}
+    </form>
+  );
+}
 
 export function Footer() {
   const pathname = usePathname();
@@ -119,7 +185,6 @@ export function Footer() {
                         className="group relative inline-flex items-center text-[11px] uppercase tracking-[0.16em] text-paper/65 hover:text-[#dfcaa8] transition-colors"
                       >
                         <span>{l.label}</span>
-                        {/* হেডারের মতো সোনালী আন্ডারলাইন বার */}
                         <span className="absolute -bottom-0.5 left-0 right-0 h-px bg-gradient-to-r from-transparent via-[#c5a880] to-transparent scale-x-0 group-hover:scale-x-100 transition-transform duration-300 origin-center" />
                       </a>
                     ) : (
@@ -128,7 +193,6 @@ export function Footer() {
                         className="group relative inline-flex items-center text-[11px] uppercase tracking-[0.16em] text-paper/65 hover:text-[#dfcaa8] transition-colors"
                       >
                         <span>{l.label}</span>
-                        {/* হেডারের মতো সোনালী আন্ডারলাইন বার */}
                         <span className="absolute -bottom-0.5 left-0 right-0 h-px bg-gradient-to-r from-transparent via-[#c5a880] to-transparent scale-x-0 group-hover:scale-x-100 transition-transform duration-300 origin-center" />
                       </Link>
                     )}
