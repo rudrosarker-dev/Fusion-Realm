@@ -80,10 +80,10 @@ export function ProductInfo({ product }: { product: Product }) {
     <div className="flex flex-col gap-6">
       <div>
         <div className="flex items-center justify-between gap-2">
-          <p className="eyebrow !text-gold-dark font-mono font-medium">
+          <p className="eyebrow !text-[#9e7f55] font-mono font-medium">
             {product.collection === "limited" ? "Limited Edition" : product.collection === "studio" ? "Studio Collection" : product.category}
           </p>
-          <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-ink bg-cream/70 px-2.5 py-1 border border-line rounded-2xs">
+          <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-ink bg-cream/70 px-2.5 py-1 border border-line rounded-md shadow-sm">
             SKU: {product.sku}
           </span>
         </div>
@@ -131,15 +131,15 @@ export function ProductInfo({ product }: { product: Product }) {
         <QtyStepper qty={qty} onChange={(q) => setQty(Math.min(q, maxForSize))} max={Math.max(1, maxForSize)} />
       </div>
 
-      {/* পরিপাটি এক সমান বাটন দুটি */}
+      {/* Admin Panel Style Buttons */}
       <div className="grid grid-cols-2 gap-3 pt-2">
         <button
           type="button"
           disabled={soldOut || loading !== null}
           onClick={() => addToBag("add")}
-          className="inline-flex h-12 w-full items-center justify-center gap-2 rounded-xs border border-ink bg-transparent text-[11px] font-semibold uppercase tracking-[0.2em] text-ink transition-all duration-300 hover:-translate-y-0.5 hover:bg-ink hover:text-paper hover:shadow-[0_4px_16px_rgba(0,0,0,0.12)] active:translate-y-0 active:scale-[0.98] cursor-pointer disabled:pointer-events-none disabled:opacity-40"
+          className="group inline-flex h-12 w-full items-center justify-center gap-2.5 rounded-md border border-[#e0d9ca] bg-transparent text-[11px] font-bold uppercase tracking-[0.2em] text-[#0e0d0b] shadow-[0_2px_8px_rgba(0,0,0,0.02)] transition-all duration-300 hover:-translate-y-0.5 hover:border-[#c5a880] hover:bg-[#c5a880]/5 hover:text-[#9e7f55] disabled:pointer-events-none disabled:opacity-40"
         >
-          <ShoppingBag className="size-4" strokeWidth={1.5} />
+          <ShoppingBag className="size-4 text-[#0e0d0b] transition-colors group-hover:text-[#9e7f55]" strokeWidth={1.5} />
           <span>{loading === "add" ? "Adding..." : soldOut ? "Out of Stock" : "Add to Bag"}</span>
         </button>
 
@@ -147,18 +147,18 @@ export function ProductInfo({ product }: { product: Product }) {
           type="button"
           disabled={soldOut || loading !== null}
           onClick={() => addToBag("buy")}
-          className="inline-flex h-12 w-full items-center justify-center gap-2 rounded-xs border border-ink bg-ink text-[11px] font-semibold uppercase tracking-[0.2em] text-paper shadow-[0_1px_2px_rgba(0,0,0,0.08),0_4px_14px_rgba(0,0,0,0.14)] transition-all duration-300 hover:-translate-y-0.5 hover:border-gold-dark hover:bg-gold-dark hover:shadow-[0_6px_20px_rgba(0,0,0,0.18)] active:translate-y-0 active:scale-[0.98] cursor-pointer disabled:pointer-events-none disabled:opacity-40"
+          className="group inline-flex h-12 w-full items-center justify-center gap-2.5 rounded-md bg-[#0e0d0b] text-[11px] font-bold uppercase tracking-[0.2em] text-[#f6f3eb] shadow-[inset_0px_-2px_0px_0px_rgba(197,168,128,0.4),0_4px_10px_rgba(0,0,0,0.1)] transition-all duration-300 hover:-translate-y-0.5 hover:text-[#dfcaa8] hover:shadow-[inset_0px_-2px_0px_0px_rgba(197,168,128,0.8),0_6px_15px_rgba(0,0,0,0.15)] disabled:pointer-events-none disabled:opacity-40"
         >
-          <Zap className="size-3.5 fill-current" />
+          <Zap className="size-3.5 fill-[#dfcaa8] text-[#dfcaa8] transition-transform group-hover:scale-110" />
           <span>{loading === "buy" ? "Processing..." : "Buy Now"}</span>
         </button>
       </div>
 
-      <WishlistButton productId={product.id} productName={product.name} withLabel className="w-fit" />
+      <WishlistButton productId={product.id} productName={product.name} withLabel className="w-fit mt-2" />
 
       <div className="flex flex-col gap-2.5 border-t border-line pt-6 text-xs leading-relaxed text-ash">
         <p className="flex items-center gap-2">
-          <Truck className="size-4 shrink-0 text-gold-dark" strokeWidth={1.5} />
+          <Truck className="size-4 shrink-0 text-[#9e7f55]" strokeWidth={1.5} />
           Free delivery over ৳15,000 — nationwide across Bangladesh
         </p>
         <p className="flex items-center gap-2">

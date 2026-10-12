@@ -44,7 +44,7 @@ export function Hero({ banner = DEFAULT_BANNERS.hero, content }: { banner?: stri
       <div className="container-x relative z-10 pb-20 pt-24 text-paper sm:pb-32 sm:pt-36">
         {eyebrow && eyebrow.trim() !== "" && (
           <Reveal>
-            <p className="eyebrow !text-gold-light font-mono font-medium tracking-[0.28em] drop-shadow-sm">{eyebrow}</p>
+            <p className="eyebrow !text-[#dfcaa8] font-mono font-medium tracking-[0.28em] drop-shadow-sm">{eyebrow}</p>
           </Reveal>
         )}
         {heading && heading.trim() !== "" && (
@@ -65,13 +65,13 @@ export function Hero({ banner = DEFAULT_BANNERS.hero, content }: { banner?: stri
           <div className="mt-10 flex flex-wrap items-center gap-4 sm:gap-5">
             <Link
               href="/shop"
-              className="group relative inline-flex h-12 items-center justify-center overflow-hidden rounded-xs bg-paper px-8 text-xs font-semibold uppercase tracking-[0.2em] text-ink shadow-[0_1px_2px_rgba(0,0,0,0.06),0_4px_12px_rgba(0,0,0,0.08)] transition-all duration-300 hover:-translate-y-0.5 hover:bg-gold-light hover:shadow-[0_4px_20px_rgba(0,0,0,0.12)] active:translate-y-0 active:scale-[0.98] cursor-pointer"
+              className="inline-flex h-12 items-center justify-center gap-2 rounded-md bg-[#f6f3eb] px-8 text-[11px] font-bold uppercase tracking-[0.2em] text-[#0e0d0b] shadow-[inset_0px_-2px_0px_0px_rgba(0,0,0,0.1),0_4px_12px_rgba(0,0,0,0.1)] transition-all duration-300 hover:-translate-y-0.5 hover:shadow-[inset_0px_-2px_0px_0px_rgba(197,168,128,0.6),0_6px_16px_rgba(0,0,0,0.15)] hover:text-[#9e7f55] cursor-pointer"
             >
               Explore Collection
             </Link>
             <Link
               href="/about"
-              className="inline-flex h-12 items-center justify-center rounded-xs border border-white/50 bg-white/10 px-7 text-xs font-medium uppercase tracking-[0.2em] text-paper backdrop-blur-md transition-all duration-300 hover:border-gold-light hover:bg-white/15 hover:text-gold-light hover:-translate-y-0.5 active:translate-y-0 active:scale-[0.98] cursor-pointer"
+              className="inline-flex h-12 items-center justify-center gap-2 rounded-md border border-white/20 bg-black/20 px-8 text-[11px] font-semibold uppercase tracking-[0.2em] text-white backdrop-blur-md transition-all duration-300 hover:-translate-y-0.5 hover:border-[#c5a880]/50 hover:bg-black/40 hover:text-[#dfcaa8] cursor-pointer"
             >
               The Atelier Story
             </Link>
@@ -80,25 +80,22 @@ export function Hero({ banner = DEFAULT_BANNERS.hero, content }: { banner?: stri
       </div>
 
       <div className="absolute bottom-8 right-8 z-10 hidden items-center gap-3 text-paper/60 sm:flex font-mono" aria-hidden>
-        <ArrowDown className="size-3.5 text-gold-light animate-bounce" strokeWidth={1.5} />
+        <ArrowDown className="size-3.5 text-[#dfcaa8] animate-bounce" strokeWidth={1.5} />
         <span className="text-[10px] uppercase tracking-[0.25em]">Scroll</span>
       </div>
     </section>
   );
 }
 
-/* ————————————————— VALUE MARQUEE (CMS CONTROLLED) ————————————————— */
+/* ————————————————— VALUE MARQUEE ————————————————— */
 export function ValueMarquee({ itemsString }: { itemsString?: string }) {
-  if (itemsString !== undefined && itemsString.trim() === "") {
-    return null;
-  }
+  if (itemsString !== undefined && itemsString.trim() === "") return null;
 
   const rawList = typeof itemsString === "string" && itemsString.trim().length > 0 
     ? itemsString.split("|") 
     : (BRAND_CONFIG.marqueeItems || []);
 
   const items = rawList.map((s) => String(s).trim()).filter(Boolean);
-
   if (items.length === 0) return null;
 
   return (
@@ -109,7 +106,7 @@ export function ValueMarquee({ itemsString }: { itemsString?: string }) {
             <span className="text-[10px] sm:text-[11px] uppercase tracking-[0.26em] text-ink font-semibold font-mono">
               {item}
             </span>
-            {index < items.length - 1 && <span className="hidden size-1 rounded-full bg-gold-dark sm:inline-block" aria-hidden />}
+            {index < items.length - 1 && <span className="hidden size-1 rounded-full bg-[#9e7f55] sm:inline-block" aria-hidden />}
           </div>
         ))}
       </div>
@@ -127,16 +124,16 @@ export function FeaturedCollection({ banner = DEFAULT_BANNERS.collection, conten
     <section className="container-x py-24 lg:py-36" aria-label="The new collection">
       <div className="grid items-center gap-12 lg:gap-20 lg:grid-cols-12">
         <Reveal className="lg:col-span-7" direction="left">
-          <Link href="/collections/new-season" className="group relative block overflow-hidden bg-cream/40 border border-line rounded-xs shadow-sm">
+          <Link href="/collections/new-season" className="group relative block overflow-hidden bg-cream/40 border border-line rounded-md shadow-sm">
             <div className="relative aspect-[4/5] sm:aspect-[16/11]">
-              <Image src={banner || DEFAULT_BANNERS.collection} alt={`Featured Collection — ${BRAND_CONFIG.brandName}`} fill sizes="(max-width: 1024px) 100vw, 58vw" className="object-cover transition-transform duration-500 ease-out group-hover:scale-[1.01]" />
+              <Image src={banner || DEFAULT_BANNERS.collection} alt={`Featured Collection`} fill sizes="(max-width: 1024px) 100vw, 58vw" className="object-cover transition-transform duration-700 ease-out group-hover:scale-[1.02]" />
             </div>
           </Link>
         </Reveal>
         <div className="lg:col-span-5 lg:pl-4">
           {eyebrow && eyebrow.trim() !== "" && (
             <Reveal>
-              <p className="eyebrow !text-gold-dark font-mono font-semibold tracking-[0.25em]">{eyebrow}</p>
+              <p className="eyebrow !text-[#9e7f55] font-mono font-semibold tracking-[0.25em]">{eyebrow}</p>
             </Reveal>
           )}
           {heading && heading.trim() !== "" && (
@@ -154,10 +151,10 @@ export function FeaturedCollection({ banner = DEFAULT_BANNERS.collection, conten
           <Reveal delay={260}>
             <Link
               href="/collections/new-season"
-              className="mt-8 group inline-flex items-center gap-2 border-b border-ink/35 pb-1 text-xs font-semibold uppercase tracking-[0.22em] text-ink transition-all duration-300 hover:border-gold-dark hover:text-gold-dark"
+              className="mt-8 group inline-flex items-center gap-2 border-b border-ink/30 pb-1 text-[11px] font-bold uppercase tracking-[0.2em] text-ink transition-all duration-300 hover:border-[#9e7f55] hover:text-[#9e7f55]"
             >
               <span>Explore Collection</span>
-              <ArrowRight className="size-3.5 transition-transform duration-300 group-hover:translate-x-0.5" />
+              <ArrowRight className="size-3.5 transition-transform duration-300 group-hover:translate-x-1" />
             </Link>
           </Reveal>
         </div>
@@ -176,14 +173,14 @@ export function SelectedPieces({ products = [] }: { products?: Product[] }) {
         <div className="mb-12 flex flex-wrap items-end justify-between gap-6 border-b border-line/60 pb-6">
           <Reveal>
             <div>
-              <p className="eyebrow !text-gold-dark font-mono font-semibold tracking-[0.25em]">Curated Archive</p>
+              <p className="eyebrow !text-[#9e7f55] font-mono font-semibold tracking-[0.25em]">Curated Archive</p>
               <h2 className="mt-3 font-display text-3xl sm:text-4xl font-normal text-ink">Selected Silhouettes</h2>
             </div>
           </Reveal>
           <Reveal delay={100} className="sm:pr-24">
-            <Link href="/shop" className="group text-[11px] font-semibold uppercase tracking-[0.2em] text-ink hover:text-gold-dark transition-colors flex items-center gap-1.5">
+            <Link href="/shop" className="group text-[11px] font-bold uppercase tracking-[0.2em] text-ink hover:text-[#9e7f55] transition-all duration-300 flex items-center gap-1.5">
               <span>View All Pieces</span>
-              <ArrowRight className="size-3.5 transition-transform duration-300 group-hover:translate-x-0.5" />
+              <ArrowRight className="size-3.5 transition-transform duration-300 group-hover:translate-x-1" />
             </Link>
           </Reveal>
         </div>
@@ -204,13 +201,13 @@ export function CategorySplit({ menBanner = DEFAULT_BANNERS.men, womenBanner = D
       {cats.map((c) => (
         <Link key={c.title} href={c.href} className="group relative block overflow-hidden">
           <div className="relative aspect-[4/5] md:aspect-[3/4]">
-            <Image src={c.image} alt={c.alt} fill sizes="(max-width: 768px) 100vw, 50vw" className="object-cover transition-transform duration-500 ease-out group-hover:scale-[1.01]" />
+            <Image src={c.image} alt={c.alt} fill sizes="(max-width: 768px) 100vw, 50vw" className="object-cover transition-transform duration-700 ease-out group-hover:scale-[1.02]" />
             <div className="absolute inset-0 bg-gradient-to-t from-ink/80 via-ink/20 to-transparent transition-opacity duration-300" aria-hidden />
           </div>
           <div className="absolute inset-x-0 bottom-0 flex flex-col justify-end p-8 sm:p-14 text-paper">
             <h3 className="font-display text-3xl sm:text-4xl lg:text-5xl font-light tracking-tight">{c.title}</h3>
-            <p className="mt-3 inline-flex items-center gap-2 text-[11px] font-mono font-semibold uppercase tracking-[0.22em] text-gold-light">
-              Explore {c.title} <ArrowRight className="size-3.5 transition-transform duration-300 group-hover:translate-x-0.5" />
+            <p className="mt-3 inline-flex items-center gap-2 text-[11px] font-mono font-bold uppercase tracking-[0.22em] text-[#dfcaa8] transition-all duration-300">
+              Explore {c.title} <ArrowRight className="size-3.5 transition-transform duration-300 group-hover:translate-x-1" />
             </p>
           </div>
         </Link>
@@ -231,7 +228,7 @@ export function Story({ banner = DEFAULT_BANNERS.story, content }: { banner?: st
         <div className="flex flex-col justify-center">
           {eyebrow && eyebrow.trim() !== "" && (
             <Reveal>
-              <p className="eyebrow !text-gold font-mono font-semibold tracking-[0.25em]">{eyebrow}</p>
+              <p className="eyebrow !text-[#c5a880] font-mono font-semibold tracking-[0.25em]">{eyebrow}</p>
             </Reveal>
           )}
           {heading && heading.trim() !== "" && (
@@ -252,7 +249,7 @@ export function Story({ banner = DEFAULT_BANNERS.story, content }: { banner?: st
             <div className="mt-10">
               <Link
                 href="/about"
-                className="inline-flex h-12 items-center justify-center rounded-xs bg-paper px-8 text-xs font-semibold uppercase tracking-[0.2em] text-ink shadow-[0_1px_2px_rgba(0,0,0,0.06),0_4px_12px_rgba(0,0,0,0.08)] transition-all duration-300 hover:-translate-y-0.5 hover:bg-gold-light hover:shadow-[0_4px_20px_rgba(0,0,0,0.12)] active:translate-y-0 active:scale-[0.98] cursor-pointer"
+                className="inline-flex h-12 items-center justify-center gap-2 rounded-md bg-[#f6f3eb] px-8 text-[11px] font-bold uppercase tracking-[0.2em] text-[#0e0d0b] shadow-[inset_0px_-2px_0px_0px_rgba(0,0,0,0.1),0_4px_12px_rgba(0,0,0,0.1)] transition-all duration-300 hover:-translate-y-0.5 hover:shadow-[inset_0px_-2px_0px_0px_rgba(197,168,128,0.6),0_6px_16px_rgba(0,0,0,0.15)] hover:text-[#9e7f55] cursor-pointer"
               >
                 Our Story
               </Link>
@@ -260,7 +257,7 @@ export function Story({ banner = DEFAULT_BANNERS.story, content }: { banner?: st
           </Reveal>
         </div>
         <Reveal className="relative min-h-[380px] lg:min-h-0" direction="left">
-          <div className="relative h-full min-h-[400px] overflow-hidden border border-paper/15 shadow-xl rounded-xs">
+          <div className="relative h-full min-h-[400px] overflow-hidden border border-paper/15 rounded-md shadow-xl">
             <Image src={banner || DEFAULT_BANNERS.story} alt="Textile detail" fill sizes="(max-width: 1024px) 100vw, 50vw" className="object-cover" />
           </div>
         </Reveal>
@@ -281,7 +278,7 @@ export function CollectionFeature({ banner = DEFAULT_BANNERS.hero, content }: { 
         <div className="order-2 lg:order-1 lg:col-span-4">
           {eyebrow && eyebrow.trim() !== "" && (
             <Reveal>
-              <p className="eyebrow !text-gold-dark font-mono font-semibold tracking-[0.25em]">{eyebrow}</p>
+              <p className="eyebrow !text-[#9e7f55] font-mono font-semibold tracking-[0.25em]">{eyebrow}</p>
             </Reveal>
           )}
           {heading && heading.trim() !== "" && (
@@ -300,7 +297,7 @@ export function CollectionFeature({ banner = DEFAULT_BANNERS.hero, content }: { 
             <div className="mt-8">
               <Link
                 href="/collections/core"
-                className="inline-flex h-12 items-center justify-center rounded-xs border border-ink bg-transparent px-7 text-xs font-semibold uppercase tracking-[0.2em] text-ink transition-all duration-300 hover:-translate-y-0.5 hover:bg-ink hover:text-paper hover:shadow-[0_4px_16px_rgba(0,0,0,0.12)] active:translate-y-0 active:scale-[0.98] cursor-pointer"
+                className="inline-flex h-12 items-center justify-center gap-2 rounded-md border border-[#e0d9ca] bg-transparent px-8 text-[11px] font-bold uppercase tracking-[0.2em] text-[#0e0d0b] shadow-[0_2px_8px_rgba(0,0,0,0.02)] transition-all duration-300 hover:-translate-y-0.5 hover:border-[#c5a880] hover:bg-[#c5a880]/5 hover:text-[#9e7f55] cursor-pointer"
               >
                 View Core Collection
               </Link>
@@ -308,9 +305,9 @@ export function CollectionFeature({ banner = DEFAULT_BANNERS.hero, content }: { 
           </Reveal>
         </div>
         <Reveal className="order-1 lg:order-2 lg:col-span-8" direction="left">
-          <Link href="/collections/core" className="group relative block overflow-hidden bg-cream/40 border border-line rounded-xs shadow-sm">
+          <Link href="/collections/core" className="group relative block overflow-hidden bg-cream/40 border border-line rounded-md shadow-sm">
             <div className="relative aspect-[16/10] sm:aspect-[21/9] lg:aspect-[16/10]">
-              <Image src={banner || DEFAULT_BANNERS.hero} alt="Core collection" fill sizes="(max-width: 1024px) 100vw, 66vw" className="object-cover transition-transform duration-500 ease-out group-hover:scale-[1.01]" />
+              <Image src={banner || DEFAULT_BANNERS.hero} alt="Core collection" fill sizes="(max-width: 1024px) 100vw, 66vw" className="object-cover transition-transform duration-700 ease-out group-hover:scale-[1.02]" />
             </div>
           </Link>
         </Reveal>
@@ -327,15 +324,15 @@ export function ProductHighlight({ product }: { product?: Product | null }) {
     <section className="bg-cream/20 border-t border-line/60 py-24 lg:py-32" aria-label="Featured product">
       <div className="container-x grid items-center gap-12 lg:grid-cols-2 lg:gap-20">
         <Reveal className="relative" direction="left">
-          <Link href={`/products/${product.slug}`} className="group relative block overflow-hidden border border-line bg-paper rounded-xs shadow-sm">
+          <Link href={`/products/${product.slug}`} className="group relative block overflow-hidden border border-line bg-paper rounded-md shadow-sm">
             <div className="relative aspect-[4/5]">
-              <Image src={product.images?.[0]?.src || "/images/product-hoodie.jpg"} alt={product.name} fill sizes="(max-width: 1024px) 100vw, 50vw" className="object-cover" />
+              <Image src={product.images?.[0]?.src || "/images/product-hoodie.jpg"} alt={product.name} fill sizes="(max-width: 1024px) 100vw, 50vw" className="object-cover transition-transform duration-700 ease-out group-hover:scale-[1.02]" />
             </div>
           </Link>
         </Reveal>
         <div>
           <Reveal>
-            <p className="eyebrow !text-gold-dark font-mono font-semibold tracking-[0.25em]">Piece of the Season</p>
+            <p className="eyebrow !text-[#9e7f55] font-mono font-semibold tracking-[0.25em]">Piece of the Season</p>
           </Reveal>
           <Reveal delay={100}>
             <h2 className="mt-4 font-display text-4xl sm:text-5xl font-light text-ink text-balance">{product.name}</h2>
@@ -343,8 +340,8 @@ export function ProductHighlight({ product }: { product?: Product | null }) {
           <Reveal delay={180}>
             <div className="mt-4 flex items-center gap-4">
               <Price amountBDT={product.priceBDT} className="text-2xl font-semibold text-ink" />
-              <span className="flex items-center gap-1.5 text-[10px] text-ink/80 font-mono tracking-wider bg-gold/15 px-3 py-1 rounded-full border border-gold/30">
-                <Star className="size-3 fill-gold text-gold" /> {product.rating || 5.0} ({product.reviews || 0} Reviews)
+              <span className="flex items-center gap-1.5 text-[10px] text-ink/80 font-mono tracking-wider bg-gold/15 px-3 py-1 rounded-md border border-gold/30">
+                <Star className="size-3 fill-[#c5a880] text-[#c5a880]" /> {product.rating || 5.0} ({product.reviews || 0} Reviews)
               </span>
             </div>
           </Reveal>
@@ -355,13 +352,13 @@ export function ProductHighlight({ product }: { product?: Product | null }) {
             <div className="mt-9 flex flex-wrap items-center gap-4">
               <Link
                 href={`/products/${product.slug}`}
-                className="inline-flex h-12 items-center justify-center rounded-xs bg-ink px-8 text-xs font-semibold uppercase tracking-[0.2em] text-paper shadow-[0_1px_2px_rgba(0,0,0,0.08),0_4px_14px_rgba(0,0,0,0.12)] transition-all duration-300 hover:-translate-y-0.5 hover:bg-gold-dark hover:shadow-[0_6px_20px_rgba(0,0,0,0.16)] active:translate-y-0 active:scale-[0.98] cursor-pointer"
+                className="inline-flex h-12 items-center justify-center gap-2 rounded-md bg-[#0e0d0b] px-8 text-[11px] font-bold uppercase tracking-[0.2em] text-[#f6f3eb] shadow-[inset_0px_-2px_0px_0px_rgba(197,168,128,0.4),0_4px_10px_rgba(0,0,0,0.1)] transition-all duration-300 hover:-translate-y-0.5 hover:text-[#dfcaa8] hover:shadow-[inset_0px_-2px_0px_0px_rgba(197,168,128,0.8),0_6px_15px_rgba(0,0,0,0.15)] cursor-pointer"
               >
                 Shop Now
               </Link>
               <Link
                 href="/shop"
-                className="inline-flex h-12 items-center justify-center rounded-xs border border-ink/35 bg-transparent px-7 text-xs font-medium uppercase tracking-[0.2em] text-ink transition-all duration-300 hover:-translate-y-0.5 hover:border-ink hover:bg-ink/[0.03] active:translate-y-0 active:scale-[0.98] cursor-pointer"
+                className="inline-flex h-12 items-center justify-center gap-2 rounded-md border border-[#e0d9ca] bg-transparent px-8 text-[11px] font-bold uppercase tracking-[0.2em] text-[#0e0d0b] shadow-[0_2px_8px_rgba(0,0,0,0.02)] transition-all duration-300 hover:-translate-y-0.5 hover:border-[#c5a880] hover:bg-[#c5a880]/5 hover:text-[#9e7f55] cursor-pointer"
               >
                 View All Pieces
               </Link>
@@ -381,9 +378,9 @@ export function NewsletterSection({ content }: { content?: any }) {
 
   return (
     <section className="container-x py-24 lg:py-36" aria-label="Newsletter">
-      <Reveal className="mx-auto max-w-3xl border border-line bg-paper p-8 sm:p-16 text-center rounded-xs shadow-sm">
+      <Reveal className="mx-auto max-w-3xl border border-line bg-paper p-8 sm:p-16 text-center rounded-md shadow-sm">
         {eyebrow && eyebrow.trim() !== "" && (
-          <div className="inline-flex items-center gap-2 border border-gold/40 bg-gold/10 px-4 py-1.5 text-[10px] font-mono uppercase tracking-[0.25em] text-gold-dark mb-5 rounded-xs">
+          <div className="inline-flex items-center gap-2 border border-gold/40 bg-gold/10 px-4 py-1.5 text-[10px] font-mono uppercase tracking-[0.25em] text-[#9e7f55] mb-5 rounded-md">
             <Sparkles className="size-3" />
             <span className="font-semibold">{eyebrow}</span>
           </div>
