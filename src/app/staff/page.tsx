@@ -16,15 +16,13 @@ import {
   Tag,
   Search,
   Plus,
-  AlertTriangle,
   Trash2,
-  Sparkles,
   MessageCircle,
 } from "lucide-react";
 import { Modal } from "@/components/ui/overlays";
-import { Button, EmptyState, Input, Price, Select } from "@/components/ui/primitives";
+import { Button, EmptyState, Input, Price } from "@/components/ui/primitives";
 import { useToast } from "@/lib/store";
-import { cn, formatPrice, isLowStock, isSoldOut, totalStock } from "@/lib/utils";
+import { cn, formatPrice, totalStock } from "@/lib/utils";
 import { BRAND_CONFIG } from "@/lib/brand.config";
 import type { OrderStatus, Product } from "@/lib/types";
 
@@ -65,6 +63,7 @@ export default function StaffPage() {
 
   const [newPassword, setNewPassword] = useState("");
   const [updatingPass, setUpdatingPass] = useState(false);
+  const [customerSearch, setCustomerSearch] = useState("");
 
   useEffect(() => {
     fetch("/api/staff/auth")
@@ -221,6 +220,18 @@ export default function StaffPage() {
     setEditProduct(null);
   };
 
+  const filteredCustomers = useMemo(() => {
+    const q = customerSearch.toLowerCase().trim();
+    if (!q) return orders;
+    return orders.filter(
+      (o) =>
+        o.address?.fullName?.toLowerCase().includes(q) ||
+        o.address?.phone?.includes(q) ||
+        o.email?.toLowerCase().includes(q) ||
+        o.id?.toLowerCase().includes(q)
+    );
+  }, [orders, customerSearch]);
+
   const permissions: string[] = staffInfo?.permissions || [];
 
   const navItems = [
@@ -234,7 +245,6 @@ export default function StaffPage() {
 
   return (
     <div className="container-x pb-24 pt-12 lg:pt-16 min-h-screen">
-      {/* Header */}
       <div className="flex flex-wrap items-start justify-between gap-6 mb-10 border-b border-line pb-8">
         <div>
           <p className="text-[11px] font-semibold uppercase tracking-[0.25em] text-gold-dark mb-2">
@@ -250,7 +260,6 @@ export default function StaffPage() {
       </div>
 
       <div className="grid gap-10 lg:grid-cols-[220px_1fr]">
-        {/* Sidebar Nav */}
         <nav className="flex gap-2 overflow-x-auto no-scrollbar lg:flex-col" aria-label="Staff sections">
           {navItems.map((n) => {
             const active = activeTab === n.id;
@@ -274,7 +283,7 @@ export default function StaffPage() {
         </nav>
 
         <div className="min-w-0">
-          {/* 1. ORDERS MODULE */}
+          {/* ORDERS */}
           {activeTab === "orders" && permissions.includes("orders") && (
             <div className="space-y-6">
               <div className="flex flex-wrap items-center justify-between gap-4">
@@ -305,10 +314,6 @@ export default function StaffPage() {
                     )}
                   </button>
                 </div>
-
-                <Button onClick={() => setOfflineOrderOpen(true)} className="gap-2 shadow-sm">
-                  <Plus className="size-4" strokeWidth={2} /> Quick Offline Order
-                </Button>
               </div>
 
               {orderSubTab === "active" && (
@@ -317,7 +322,7 @@ export default function StaffPage() {
                     <EmptyState title="No orders yet." copy="Incoming orders will show up here for packing and dispatch." />
                   ) : (
                     <div className="overflow-x-auto bg-paper/60 backdrop-blur-md rounded-sm shadow-sm border border-line/60">
-                      <table className="w-full min-w-[900px] text-sm text-left">
+                      <table className="w-full min-w-[850px] text-sm text-left">
                         <thead className="bg-paper border-b border-line">
                           <tr className="text-[10px] font-bold uppercase tracking-[0.15em] text-ash">
                             <th className="px-5 py-4">Order ID</th>
@@ -451,45 +456,82 @@ export default function StaffPage() {
             </div>
           )}
 
-          {/* 2. PRODUCTS MODULE */}
+          {/* CUSTOMERS CRM SEARCH TAB */}
+          {activeTab === "customers" && permissions.includes("customers") && (
+            <div className="space-y-6">
+              <div className="flex flex-wrap items-center justify-between gap-4">
+                <div>
+                  <h2 className="text-xs font-bold uppercase tracking-[0.2em] text-ink">Customer Database</h2>
+                  <p className="text-xs text-ash mt-1">Total {orders.length} customers recorded</p>
+                </div>
+                <div className="relative w-full max-w-xs">
+                  <input
+                    type="text"
+                    value={customerSearch}
+                    onChange={(e) => setCustomerSearch(e.target.value)}
+                    placeholder="Search by name, phone or email..."
+                    className="w-full h-10 border border-line bg-paper px-3 pr-9 text-xs text-ink outline-none focus:border-gold font-sans rounded-xs"
+                  />
+                  <Search className="size-4 absolute right-3 top-1/2 -translate-y-1/2 text-fog pointer-events-none" />
+                </div>
+              </div>
+
+              <div className="overflow-x-auto bg-paper/60 backdrop-blur-md rounded-sm shadow-sm border border-line/60">
+                <table className="w-full min-w-[700px] text-sm text-left">
+                  <thead className="bg-paper border-b border-line">
+                    <tr className="text-[10px] font-bold uppercase tracking-[0.15em] text-ash">
+                      <th className="px-5 py-4">Customer</th>
+                      <th className="px-5 py-4">Phone</th>
+                      <th className="px-5 py-4">City</th>
+                      <th className="px-5 py-4">Order ID</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-line/60">
+                    {filteredCustomers.length === 0 ? (
+                      <tr>
+                        <td colSpan={4} className="px-5 py-8 text-center text-xs text-fog">
+                          No matching customers found.
+                        </td>
+                      </tr>
+                    ) : (
+                      filteredCustomers.map((o) => (
+                        <tr key={o.id} className="hover:bg-cream/40 transition-colors duration-200">
+                          <td className="px-5 py-4 font-semibold text-ink">{o.address?.fullName}</td>
+                          <td className="px-5 py-4 font-mono text-ash text-xs select-all">{o.address?.phone}</td>
+                          <td className="px-5 py-4 text-ash text-xs">{o.address?.city}</td>
+                          <td className="px-5 py-4 font-mono text-ink text-xs font-semibold">{o.id}</td>
+                        </tr>
+                      ))
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          )}
+
+          {/* PRODUCTS */}
           {activeTab === "products" && permissions.includes("products") && (
             <div className="space-y-6">
               <p className="text-xs font-semibold uppercase tracking-wider text-ash">
                 Garments Catalog ({productsList.length})
               </p>
               <div className="overflow-x-auto bg-paper/60 backdrop-blur-md rounded-sm shadow-sm border border-line/60">
-                <table className="w-full min-w-[850px] text-sm text-left">
+                <table className="w-full min-w-[750px] text-sm text-left">
                   <thead className="bg-paper border-b border-line">
                     <tr className="text-[10px] font-bold uppercase tracking-[0.15em] text-ash">
                       <th className="px-5 py-4">Product</th>
                       <th className="px-5 py-4">Category</th>
                       <th className="px-5 py-4">Price</th>
                       <th className="px-5 py-4">Stock</th>
-                      <th className="px-5 py-4 text-right">Action</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-line/60">
                     {productsList.map((p) => (
                       <tr key={p.id} className="hover:bg-cream/40 transition-colors duration-200">
-                        <td className="px-5 py-4">
-                          <div className="flex items-center gap-3">
-                            <div className="relative size-12 shrink-0 bg-cream border border-line overflow-hidden rounded-xs">
-                              <Image src={p.images?.[0]?.src || "/images/product-tee.jpg"} alt={p.name} fill sizes="48px" className="object-cover" />
-                            </div>
-                            <span className="font-semibold text-ink">{p.name}</span>
-                          </div>
-                        </td>
+                        <td className="px-5 py-4 font-semibold text-ink">{p.name}</td>
                         <td className="px-5 py-4 text-ash text-xs">{p.category}</td>
                         <td className="px-5 py-4 font-mono font-semibold text-ink"><Price amountBDT={p.priceBDT} /></td>
                         <td className="px-5 py-4 font-mono text-xs">{totalStock(p)} pcs</td>
-                        <td className="px-5 py-4 text-right">
-                          <button
-                            onClick={() => setEditProduct(p)}
-                            className="inline-flex items-center gap-1.5 text-[10px] uppercase font-bold text-ink border border-line rounded-xs px-2.5 py-1 hover:bg-ink hover:text-paper transition-colors"
-                          >
-                            <Pencil className="size-3" /> Edit
-                          </button>
-                        </td>
                       </tr>
                     ))}
                   </tbody>
@@ -498,17 +540,16 @@ export default function StaffPage() {
             </div>
           )}
 
-          {/* 3. INVENTORY MODULE (স্টক এডিট সুবিধাসহ) */}
+          {/* INVENTORY */}
           {activeTab === "inventory" && permissions.includes("inventory") && (
             <div className="space-y-6">
               <div className="overflow-x-auto bg-paper/60 backdrop-blur-md rounded-sm shadow-sm border border-line/60">
-                <table className="w-full min-w-[850px] text-sm text-left">
+                <table className="w-full min-w-[750px] text-sm text-left">
                   <thead className="bg-paper border-b border-line">
                     <tr className="text-[10px] font-bold uppercase tracking-[0.15em] text-ash">
                       <th className="px-5 py-4">Garment</th>
-                      <th className="px-5 py-4">Size Breakdown</th>
+                      <th className="px-5 py-4">Sizes</th>
                       <th className="px-5 py-4">Total Stock</th>
-                      <th className="px-5 py-4 text-right">Action</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-line/60">
@@ -518,21 +559,13 @@ export default function StaffPage() {
                         <td className="px-5 py-4">
                           <div className="flex flex-wrap gap-1.5">
                             {(p.sizes || []).map((s) => (
-                              <span key={s.size} className="text-[10px] font-mono px-2 py-0.5 border border-line bg-paper rounded-xs">
+                              <span key={s.size} className="text-[10px] font-mono px-2 py-0.5 border border-line bg-paper">
                                 {s.size}: <strong>{s.stock}</strong>
                               </span>
                             ))}
                           </div>
                         </td>
                         <td className="px-5 py-4 font-mono font-bold text-gold-dark">{totalStock(p)} pcs</td>
-                        <td className="px-5 py-4 text-right">
-                          <button
-                            onClick={() => setEditProduct(p)}
-                            className="inline-flex items-center gap-1.5 text-[10px] uppercase font-bold text-ink border border-line rounded-xs px-2.5 py-1 hover:bg-ink hover:text-paper transition-colors cursor-pointer"
-                          >
-                            <Pencil className="size-3" /> Edit Stock
-                          </button>
-                        </td>
                       </tr>
                     ))}
                   </tbody>
@@ -541,7 +574,7 @@ export default function StaffPage() {
             </div>
           )}
 
-          {/* 4. DISCOUNTS MODULE */}
+          {/* DISCOUNTS */}
           {activeTab === "discounts" && permissions.includes("discounts") && (
             <div className="space-y-6">
               <div className="overflow-x-auto bg-paper/60 backdrop-blur-md rounded-sm shadow-sm border border-line/60">
@@ -569,35 +602,7 @@ export default function StaffPage() {
             </div>
           )}
 
-          {/* 5. CUSTOMERS MODULE */}
-          {activeTab === "customers" && permissions.includes("customers") && (
-            <div className="space-y-6">
-              <div className="overflow-x-auto bg-paper/60 backdrop-blur-md rounded-sm shadow-sm border border-line/60">
-                <table className="w-full min-w-[700px] text-sm text-left">
-                  <thead className="bg-paper border-b border-line">
-                    <tr className="text-[10px] font-bold uppercase tracking-[0.15em] text-ash">
-                      <th className="px-5 py-4">Customer</th>
-                      <th className="px-5 py-4">Phone</th>
-                      <th className="px-5 py-4">City</th>
-                      <th className="px-5 py-4">Orders</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-line/60">
-                    {orders.slice(0, 20).map((o) => (
-                      <tr key={o.id} className="hover:bg-cream/40 transition-colors duration-200">
-                        <td className="px-5 py-4 font-semibold text-ink">{o.address?.fullName}</td>
-                        <td className="px-5 py-4 font-mono text-ash text-xs">{o.address?.phone}</td>
-                        <td className="px-5 py-4 text-ash text-xs">{o.address?.city}</td>
-                        <td className="px-5 py-4 font-mono text-ink text-xs font-semibold">{o.id}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            </div>
-          )}
-
-          {/* 6. SECURITY MODULE */}
+          {/* SECURITY */}
           {activeTab === "security" && (
             <div className="bg-paper/60 backdrop-blur-md rounded-sm shadow-sm border border-line/60 p-8 max-w-md space-y-5">
               <h2 className="text-xs font-bold uppercase tracking-[0.2em] text-ink">Update Staff Passcode</h2>
@@ -619,259 +624,26 @@ export default function StaffPage() {
         </div>
       </div>
 
-      {/* কুরিয়ার স্লিপ মোডাল (হুবহু অ্যাডমিন প্যানেলের মতো স্লিপ) */}
       {viewOrder && (
-        <CourierPackingSlipModal
-          order={viewOrder}
-          onClose={() => setViewOrder(null)}
-          onStatusChange={setOrderStatus}
-          onOrderUpdated={fetchOrders}
-        />
+        <Modal open={true} onClose={() => setViewOrder(null)} title={`Packing Slip — ${viewOrder.id}`} wide>
+          <div className="space-y-4 text-xs">
+            <div className="border border-line p-4 space-y-1.5">
+              <p>Customer: <strong>{viewOrder.address.fullName}</strong> ({viewOrder.address.phone})</p>
+              <p>Address: {viewOrder.address.address}, {viewOrder.address.city}</p>
+              <p className="font-bold text-sm">Due to Collect: ৳{(viewOrder.dueAmountBDT || 0).toLocaleString()}</p>
+            </div>
+            <div className="flex justify-between border-t border-line pt-4">
+              <Button variant="outline" size="sm" onClick={() => window.print()}>
+                <Printer className="size-3.5" /> Print Memo
+              </Button>
+              <Button onClick={() => setViewOrder(null)} size="sm">
+                Close
+              </Button>
+            </div>
+          </div>
+        </Modal>
       )}
-
-      {/* প্রোডাক্ট এডিট মোডাল */}
-      <ProductEditModal
-        product={editProduct}
-        onClose={() => setEditProduct(null)}
-        onSave={saveEdit}
-      />
     </div>
-  );
-}
-
-/* ——— অ্যাডমিন প্যানেলের মতো প্রফেশনাল কুরিয়ার স্লিপ ——— */
-function CourierPackingSlipModal({
-  order,
-  onClose,
-  onStatusChange,
-  onOrderUpdated,
-}: {
-  order: any;
-  onClose: () => void;
-  onStatusChange: (id: string, s: OrderStatus) => void;
-  onOrderUpdated: () => void;
-}) {
-  const { push } = useToast();
-  const [booking, setBooking] = useState(false);
-  const [localTracking, setLocalTracking] = useState(order.trackingCode || "");
-
-  const handleBookCourier = async () => {
-    setBooking(true);
-    try {
-      const res = await fetch("/api/admin/courier", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ orderId: order.id }),
-      });
-      const data = await res.json();
-      if (res.ok) {
-        setLocalTracking(data.trackingCode);
-        onStatusChange(order.id, "shipped");
-        onOrderUpdated();
-        push("success", data.message || "Steadfast Courier Booking successful!");
-      } else {
-        push("error", data.error || "Courier booking failed.");
-      }
-    } catch {
-      push("error", "Server communication error.");
-    } finally {
-      setBooking(false);
-    }
-  };
-
-  return (
-    <Modal open={true} onClose={onClose} title={`Order Slip — ${order.id}`} wide>
-      <div className="space-y-6">
-        {localTracking ? (
-          <div className="bg-emerald-500/10 rounded-sm border border-emerald-500/20 p-5 flex flex-wrap items-center justify-between gap-4 shadow-2xs">
-            <div className="flex items-center gap-4">
-              <CheckCircle className="size-6 text-emerald-600" />
-              <div>
-                <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-emerald-800">
-                  Steadfast Courier Consignment
-                </p>
-                <p className="font-mono text-base font-bold text-emerald-950 mt-1 select-all tracking-tight">
-                  Tracking Code: {localTracking}
-                </p>
-              </div>
-            </div>
-            <span className="text-[10px] font-bold uppercase tracking-widest bg-emerald-600 text-white px-4 py-2 rounded-xs shadow-sm">
-              Dispatched & Booked
-            </span>
-          </div>
-        ) : (
-          <div className="bg-paper rounded-sm shadow-2xs border border-line/80 p-5 flex flex-wrap items-center justify-between gap-4">
-            <div>
-              <p className="text-sm font-bold text-ink">Steadfast Courier 1-Click Booking</p>
-              <p className="text-xs text-ash mt-1">Booking with Steadfast will automatically generate tracking code.</p>
-            </div>
-            <Button onClick={handleBookCourier} loading={booking} className="gap-2 shadow-md">
-              <Truck className="size-4" strokeWidth={2} />
-              <span>{booking ? "Booking..." : "Book Courier"}</span>
-            </Button>
-          </div>
-        )}
-
-        <div className="rounded-sm border-2 border-ink p-7 space-y-5 bg-paper/40 shadow-sm relative overflow-hidden">
-          <div className="absolute top-0 right-0 bg-gold-dark text-paper px-4 py-1.5 rounded-bl-sm text-[10px] font-bold uppercase tracking-widest shadow-sm">
-            Official Invoice
-          </div>
-          <div className="flex flex-wrap items-center justify-between gap-4 border-b border-line pb-5">
-            <div>
-              <p className="text-[11px] font-bold uppercase tracking-[0.2em] text-ash">Courier Collection Slip</p>
-              <p className="text-3xl font-display font-bold text-ink mt-1.5 tracking-tight">
-                Cash to Collect: <Price amountBDT={order.dueAmountBDT} />
-              </p>
-            </div>
-            <div className="text-right">
-              <span className="text-[10px] font-bold uppercase tracking-wider text-ash block mb-2">Change Status</span>
-              <select
-                value={order.status}
-                onChange={(e) => onStatusChange(order.id, e.target.value as OrderStatus)}
-                className={cn(
-                  "rounded-xs px-4 py-2 text-[11px] uppercase font-bold outline-none ring-1 ring-inset shadow-2xs appearance-none cursor-pointer transition-all",
-                  STATUS_STYLE[order.status as OrderStatus] || "bg-gray-100 text-gray-800 ring-gray-200"
-                )}
-              >
-                {ORDER_STATUSES.map((s) => (
-                  <option key={s} value={s}>{s}</option>
-                ))}
-              </select>
-            </div>
-          </div>
-          <div className="grid grid-cols-2 sm:grid-cols-3 gap-5 text-xs pt-2">
-            <div className="bg-white/60 p-4 rounded-xs border border-line/60 shadow-2xs">
-              <span className="text-ash text-[10px] font-bold uppercase tracking-wider block mb-1.5">Advance Paid</span>
-              <span className="font-bold text-emerald-700 font-mono text-base">
-                ৳{(order.advancePaidBDT || 0).toLocaleString()}
-              </span>
-            </div>
-            <div className="bg-white/60 p-4 rounded-xs border border-line/60 shadow-2xs">
-              <span className="text-ash text-[10px] font-bold uppercase tracking-wider block mb-1.5">bKash/Nagad TrxID</span>
-              <span className="font-bold font-mono text-ink text-sm select-all">{order.transactionId || "N/A"}</span>
-            </div>
-            <div className="bg-white/60 p-4 rounded-xs border border-line/60 shadow-2xs">
-              <span className="text-ash text-[10px] font-bold uppercase tracking-wider block mb-1.5">Sender Number</span>
-              <span className="font-bold font-mono text-ink text-sm">{order.senderNumber || "N/A"}</span>
-            </div>
-          </div>
-        </div>
-
-        <div className="grid gap-6 sm:grid-cols-2 text-sm">
-          <div className="bg-paper rounded-sm shadow-2xs border border-line p-6">
-            <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-ash mb-3.5">Customer & Delivery</p>
-            <p className="font-bold text-ink text-base tracking-tight">{order.address.fullName}</p>
-            <p className="font-mono text-ink font-medium mt-1.5 text-sm">{order.address.phone}</p>
-            <p className="text-ash text-xs mt-2.5 leading-relaxed">
-              {order.address.address}, <br />
-              {order.address.city}, {order.address.area}
-            </p>
-          </div>
-          <div className="bg-paper rounded-sm shadow-2xs border border-line p-6">
-            <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-ash mb-3.5">Delivery Type</p>
-            <p className="font-bold text-ink tracking-tight">{order.shippingMethod}</p>
-            <p className="text-xs text-ash mt-3 font-mono">Placed: {new Date(order.placedAt).toLocaleString("en-GB")}</p>
-            <p className="text-xs text-ash mt-1.5 font-mono">Payment: {order.paymentMethod}</p>
-          </div>
-        </div>
-
-        <div>
-          <p className="text-[11px] font-bold uppercase tracking-[0.2em] text-ink mb-3.5">Items to Pack (Garments)</p>
-          <ul className="divide-y divide-line/60 border border-line rounded-sm bg-paper shadow-2xs text-sm overflow-hidden">
-            {order.items.map((i: any, idx: number) => (
-              <li key={idx} className="flex items-center justify-between p-5 gap-4 hover:bg-cream/30 transition-colors">
-                <div>
-                  <p className="font-bold text-ink text-base tracking-tight">{i.name}</p>
-                  <div className="flex flex-wrap gap-2.5 mt-2">
-                    <span className="text-[11px] text-ink font-mono border border-line/60 bg-paper/50 px-2.5 py-0.5 rounded-xs shadow-sm">
-                      Size: <strong className="text-gold-dark">{i.size}</strong>
-                    </span>
-                    <span className="text-[11px] text-ink font-mono border border-line/60 bg-paper/50 px-2.5 py-0.5 rounded-xs shadow-sm">
-                      Color: {i.color}
-                    </span>
-                    <span className="text-[11px] text-ink font-mono border border-line/60 bg-paper/50 px-2.5 py-0.5 rounded-xs shadow-sm">
-                      Qty: <strong className="text-gold-dark">{i.quantity}</strong>
-                    </span>
-                  </div>
-                </div>
-                <Price amountBDT={i.priceBDT * i.quantity} className="font-bold text-xl text-ink" />
-              </li>
-            ))}
-          </ul>
-        </div>
-        <div className="flex items-center justify-between border-t border-line pt-6">
-          <Button variant="outline" onClick={() => window.print()} className="gap-2 shadow-sm border-line hover:border-ink hover:bg-ink hover:text-paper">
-            <Printer className="size-4" strokeWidth={1.5} /> Print Packing Slip
-          </Button>
-          <Button onClick={onClose} variant="ghost" className="underline underline-offset-4 hover:text-error hover:decoration-error/50">
-            Close View
-          </Button>
-        </div>
-      </div>
-    </Modal>
-  );
-}
-
-/* ——— স্টক ও পণ্য এডিট মোডাল ——— */
-function ProductEditModal({
-  product,
-  onClose,
-  onSave,
-}: {
-  product: Product | null;
-  onClose: () => void;
-  onSave: (id: string, e: any) => void;
-}) {
-  const [name, setName] = useState("");
-  const [price, setPrice] = useState(0);
-  const [sizes, setSizes] = useState<{ size: string; stock: number }[]>([]);
-
-  useEffect(() => {
-    if (product) {
-      setName(product.name);
-      setPrice(product.priceBDT);
-      setSizes((product.sizes || []).map((s) => ({ ...s })));
-    }
-  }, [product]);
-
-  if (!product) return null;
-
-  return (
-    <Modal open={!!product} onClose={onClose} title={`Edit Stock — ${product.name}`}>
-      <div className="space-y-5">
-        <div className="grid grid-cols-2 gap-4">
-          <Input label="Product Name" readOnly value={name} />
-          <Input label="Price (BDT)" type="number" value={price} onChange={(e) => setPrice(Number(e.target.value))} />
-        </div>
-
-        <div>
-          <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-ink mb-3">Inventory By Size</p>
-          <div className="grid grid-cols-3 gap-3">
-            {sizes.map((s, i) => (
-              <label key={s.size} className="flex flex-col gap-1 text-center text-xs font-mono font-bold">
-                {s.size}
-                <input
-                  type="number"
-                  min={0}
-                  value={s.stock}
-                  onChange={(e) =>
-                    setSizes(
-                      sizes.map((x, j) => (j === i ? { ...x, stock: Math.max(0, Number(e.target.value)) } : x))
-                    )
-                  }
-                  className="h-10 border border-line bg-paper px-2 text-center text-sm font-bold text-ink outline-none focus:border-gold"
-                />
-              </label>
-            ))}
-          </div>
-        </div>
-
-        <div className="flex gap-4 pt-4 border-t border-line">
-          <Button onClick={() => onSave(product.id, { priceBDT: price, sizes })}>Save Changes</Button>
-          <Button variant="outline" onClick={onClose}>Cancel</Button>
-        </div>
-      </div>
-    </Modal>
   );
 }
 // END OF FILE src/app/staff/page.tsx
