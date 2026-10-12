@@ -1,8 +1,7 @@
 // START OF FILE src/app/staff/page.tsx
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
-import Image from "next/image";
+import { useEffect, useState } from "react";
 import {
   BadgeDollarSign,
   Boxes,
@@ -10,20 +9,14 @@ import {
   Printer,
   ShoppingCart,
   Users,
-  CheckCircle,
-  Truck,
-  Pencil,
   Tag,
-  Search,
   Plus,
-  AlertTriangle,
-  Trash2,
-  Sparkles,
+  Pencil,
 } from "lucide-react";
 import { Modal } from "@/components/ui/overlays";
 import { Button, EmptyState, Input, Price, Select } from "@/components/ui/primitives";
 import { useToast } from "@/lib/store";
-import { cn, formatPrice, isLowStock, isSoldOut, totalStock } from "@/lib/utils";
+import { cn, formatPrice, totalStock } from "@/lib/utils";
 import { BRAND_CONFIG } from "@/lib/brand.config";
 import type { OrderStatus, Product } from "@/lib/types";
 
@@ -59,8 +52,6 @@ export default function StaffPage() {
   const [viewOrder, setViewOrder] = useState<any>(null);
   const [offlineOrderOpen, setOfflineOrderOpen] = useState(false);
   const [editProduct, setEditProduct] = useState<Product | null>(null);
-  const [addOpen, setAddOpen] = useState(false);
-  const [addCouponOpen, setAddCouponOpen] = useState(false);
 
   const [newPassword, setNewPassword] = useState("");
   const [updatingPass, setUpdatingPass] = useState(false);
@@ -74,7 +65,8 @@ export default function StaffPage() {
           const perms: string[] = data.user.permissions || [];
           if (perms.length > 0) setActiveTab(perms[0]);
         }
-      });
+      })
+      .catch(() => {});
 
     fetchOrders();
     fetchProducts();
@@ -114,10 +106,6 @@ export default function StaffPage() {
               dueAmountBDT:
                 o.shippingAddress?.dueAmountBDT ??
                 Math.max(0, o.totalBDT - (o.shippingAddress?.advancePaidBDT ?? o.shippingBDT ?? 0)),
-              senderNumber: o.shippingAddress?.senderNumber ?? "N/A",
-              transactionId: o.shippingAddress?.transactionId ?? "N/A",
-              courier: o.shippingAddress?.courier,
-              trackingCode: o.shippingAddress?.trackingCode,
             }))
           );
         }
@@ -146,7 +134,7 @@ export default function StaffPage() {
   };
 
   const setOrderStatus = async (id: string, status: OrderStatus) => {
-    setOrders(orders.map((o) => (o.id === id ? { ...o, status } : o)));
+    setOrders((prev) => prev.map((o) => (o.id === id ? { ...o, status } : o)));
     if (viewOrder && viewOrder.id === id) {
       setViewOrder({ ...viewOrder, status });
     }
@@ -181,63 +169,6 @@ export default function StaffPage() {
     }
   };
 
-  const saveEdit = async (id: string, edit: any) => {
-    try {
-      const res = await fetch("/api/admin/products", {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ id, ...edit }),
-      });
-      if (res.ok) {
-        push("success", "Garment details updated live in database.");
-        fetchProducts();
-      } else {
-        push("error", "Failed to update product.");
-      }
-    } catch {
-      push("error", "Error saving product.");
-    }
-  };
-
-  const handleAddProduct = async (productData: any) => {
-    try {
-      const res = await fetch("/api/admin/products", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(productData),
-      });
-      if (res.ok) {
-        push("success", `${productData.name} added live to database!`);
-        fetchProducts();
-        setAddOpen(false);
-      } else {
-        push("error", "Failed to add product to database.");
-      }
-    } catch {
-      push("error", "Error adding product.");
-    }
-  };
-
-  const handleCreateCoupon = async (couponData: any) => {
-    try {
-      const res = await fetch("/api/admin/coupons", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(couponData),
-      });
-      const data = await res.json();
-      if (res.ok) {
-        push("success", `Coupon "${couponData.code}" created successfully!`);
-        fetchCoupons();
-        setAddCouponOpen(false);
-      } else {
-        push("error", data.error || "Failed to create coupon.");
-      }
-    } catch {
-      push("error", "Error connecting to server.");
-    }
-  };
-
   const permissions: string[] = staffInfo?.permissions || [];
 
   const navItems = [
@@ -251,7 +182,6 @@ export default function StaffPage() {
 
   return (
     <div className="container-x pb-24 pt-12 lg:pt-16 min-h-screen">
-      {/* Header Area */}
       <div className="flex flex-wrap items-start justify-between gap-6 mb-10 border-b border-line pb-8">
         <div>
           <p className="text-[11px] font-semibold uppercase tracking-[0.25em] text-gold-dark mb-2">
@@ -261,13 +191,12 @@ export default function StaffPage() {
             Welcome, {staffInfo?.name || "Staff Member"}
           </h1>
           <p className="mt-2 text-xs text-ash">
-            Role: <strong className="text-ink">{staffInfo?.roleTitle || "Assigned Operations"}</strong> • You have access to ({permissions.length}) module(s).
+            Role: <strong className="text-ink">{staffInfo?.roleTitle || "Assigned Operations"}</strong> • Access to ({permissions.length}) module(s).
           </p>
         </div>
       </div>
 
       <div className="grid gap-10 lg:grid-cols-[220px_1fr]">
-        {/* Sidebar Nav */}
         <nav className="flex gap-2 overflow-x-auto no-scrollbar lg:flex-col" aria-label="Staff sections">
           {navItems.map((n) => {
             const active = activeTab === n.id;
@@ -291,23 +220,20 @@ export default function StaffPage() {
         </nav>
 
         <div className="min-w-0">
-          {/* 1. ORDERS MODULE */}
+          {/* ORDERS */}
           {activeTab === "orders" && permissions.includes("orders") && (
             <div className="space-y-6">
               <div className="flex flex-wrap items-center justify-between gap-4">
                 <p className="text-xs font-semibold uppercase tracking-wider text-ash">
                   Active Orders ({orders.length})
                 </p>
-                <Button onClick={() => setOfflineOrderOpen(true)} className="gap-2 shadow-sm">
-                  <Plus className="size-4" strokeWidth={2} /> Quick Offline Order
-                </Button>
               </div>
 
               {orders.length === 0 ? (
                 <EmptyState title="No orders yet." copy="Incoming orders will show up here for packing and dispatch." />
               ) : (
                 <div className="overflow-x-auto bg-paper/60 backdrop-blur-md rounded-sm shadow-sm border border-line/60">
-                  <table className="w-full min-w-[900px] text-sm text-left">
+                  <table className="w-full min-w-[850px] text-sm text-left">
                     <thead className="bg-paper border-b border-line">
                       <tr className="text-[10px] font-bold uppercase tracking-[0.15em] text-ash">
                         <th className="px-5 py-4">Order ID</th>
@@ -370,27 +296,20 @@ export default function StaffPage() {
             </div>
           )}
 
-          {/* 2. PRODUCTS MODULE (Full Add + Edit Permission) */}
+          {/* PRODUCTS */}
           {activeTab === "products" && permissions.includes("products") && (
             <div className="space-y-6">
-              <div className="flex flex-wrap items-center justify-between gap-4">
-                <p className="text-xs font-semibold uppercase tracking-wider text-ash">
-                  {productsList.length} garments in database
-                </p>
-                <Button onClick={() => setAddOpen(true)} className="gap-2 shadow-sm">
-                  <Plus className="size-4" strokeWidth={2} /> Add Product
-                </Button>
-              </div>
-
+              <p className="text-xs font-semibold uppercase tracking-wider text-ash">
+                Garments Catalog ({productsList.length})
+              </p>
               <div className="overflow-x-auto bg-paper/60 backdrop-blur-md rounded-sm shadow-sm border border-line/60">
-                <table className="w-full min-w-[850px] text-sm text-left">
+                <table className="w-full min-w-[750px] text-sm text-left">
                   <thead className="bg-paper border-b border-line">
                     <tr className="text-[10px] font-bold uppercase tracking-[0.15em] text-ash">
                       <th className="px-5 py-4">Product</th>
                       <th className="px-5 py-4">Category</th>
                       <th className="px-5 py-4">Price</th>
                       <th className="px-5 py-4">Stock</th>
-                      <th className="px-5 py-4 text-right">Action</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-line/60">
@@ -400,14 +319,6 @@ export default function StaffPage() {
                         <td className="px-5 py-4 text-ash text-xs">{p.category}</td>
                         <td className="px-5 py-4 font-mono font-semibold text-ink"><Price amountBDT={p.priceBDT} /></td>
                         <td className="px-5 py-4 font-mono text-xs">{totalStock(p)} pcs</td>
-                        <td className="px-5 py-4 text-right">
-                          <button
-                            onClick={() => setEditProduct(p)}
-                            className="inline-flex items-center gap-1.5 text-[10px] uppercase font-bold text-ink border border-line rounded-xs px-2.5 py-1 hover:bg-ink hover:text-paper transition-colors"
-                          >
-                            <Pencil className="size-3" /> Edit
-                          </button>
-                        </td>
                       </tr>
                     ))}
                   </tbody>
@@ -416,17 +327,16 @@ export default function StaffPage() {
             </div>
           )}
 
-          {/* 3. INVENTORY MODULE */}
+          {/* INVENTORY */}
           {activeTab === "inventory" && permissions.includes("inventory") && (
             <div className="space-y-6">
               <div className="overflow-x-auto bg-paper/60 backdrop-blur-md rounded-sm shadow-sm border border-line/60">
-                <table className="w-full min-w-[800px] text-sm text-left">
+                <table className="w-full min-w-[750px] text-sm text-left">
                   <thead className="bg-paper border-b border-line">
                     <tr className="text-[10px] font-bold uppercase tracking-[0.15em] text-ash">
                       <th className="px-5 py-4">Garment</th>
-                      <th className="px-5 py-4">Size Breakdown</th>
+                      <th className="px-5 py-4">Sizes</th>
                       <th className="px-5 py-4">Total Stock</th>
-                      <th className="px-5 py-4 text-right">Action</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-line/60">
@@ -443,14 +353,6 @@ export default function StaffPage() {
                           </div>
                         </td>
                         <td className="px-5 py-4 font-mono font-bold text-gold-dark">{totalStock(p)} pcs</td>
-                        <td className="px-5 py-4 text-right">
-                          <button
-                            onClick={() => setEditProduct(p)}
-                            className="text-[10px] uppercase font-bold text-ink border border-line rounded-xs px-2.5 py-1 hover:bg-ink hover:text-paper transition-colors"
-                          >
-                            Edit Stock
-                          </button>
-                        </td>
                       </tr>
                     ))}
                   </tbody>
@@ -459,26 +361,16 @@ export default function StaffPage() {
             </div>
           )}
 
-          {/* 4. DISCOUNTS MODULE */}
+          {/* DISCOUNTS */}
           {activeTab === "discounts" && permissions.includes("discounts") && (
             <div className="space-y-6">
-              <div className="flex flex-wrap items-center justify-between gap-4">
-                <p className="text-xs font-semibold uppercase tracking-wider text-ash">
-                  Active Coupons ({couponsList.length})
-                </p>
-                <Button onClick={() => setAddCouponOpen(true)} className="gap-2 shadow-sm">
-                  <Plus className="size-4" strokeWidth={2} /> Create Coupon
-                </Button>
-              </div>
-
               <div className="overflow-x-auto bg-paper/60 backdrop-blur-md rounded-sm shadow-sm border border-line/60">
-                <table className="w-full min-w-[650px] text-sm text-left">
+                <table className="w-full min-w-[600px] text-sm text-left">
                   <thead className="bg-paper border-b border-line">
                     <tr className="text-[10px] font-bold uppercase tracking-[0.15em] text-ash">
                       <th className="px-5 py-4">Code</th>
                       <th className="px-5 py-4">Discount</th>
-                      <th className="px-5 py-4">Min Order</th>
-                      <th className="px-5 py-4">Status</th>
+                      <th className="px-5 py-4">Min Spend</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-line/60">
@@ -489,11 +381,6 @@ export default function StaffPage() {
                           {c.discountType === "percent" ? `${c.discountValue}% OFF` : `৳${c.discountValue} OFF`}
                         </td>
                         <td className="px-5 py-4 font-mono text-ash">{c.minSpendBDT ? `৳${c.minSpendBDT}` : "No min"}</td>
-                        <td className="px-5 py-4">
-                          <span className="text-[9px] font-bold uppercase px-2.5 py-1 rounded-full bg-emerald-500/10 text-emerald-700">
-                            Active
-                          </span>
-                        </td>
                       </tr>
                     ))}
                   </tbody>
@@ -502,7 +389,7 @@ export default function StaffPage() {
             </div>
           )}
 
-          {/* 5. CUSTOMERS MODULE */}
+          {/* CUSTOMERS */}
           {activeTab === "customers" && permissions.includes("customers") && (
             <div className="space-y-6">
               <div className="overflow-x-auto bg-paper/60 backdrop-blur-md rounded-sm shadow-sm border border-line/60">
@@ -512,7 +399,6 @@ export default function StaffPage() {
                       <th className="px-5 py-4">Customer</th>
                       <th className="px-5 py-4">Phone</th>
                       <th className="px-5 py-4">City</th>
-                      <th className="px-5 py-4">Orders</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-line/60">
@@ -521,7 +407,6 @@ export default function StaffPage() {
                         <td className="px-5 py-4 font-semibold text-ink">{o.address?.fullName}</td>
                         <td className="px-5 py-4 font-mono text-ash text-xs">{o.address?.phone}</td>
                         <td className="px-5 py-4 text-ash text-xs">{o.address?.city}</td>
-                        <td className="px-5 py-4 font-mono text-ink text-xs font-semibold">{o.id}</td>
                       </tr>
                     ))}
                   </tbody>
@@ -530,7 +415,7 @@ export default function StaffPage() {
             </div>
           )}
 
-          {/* 6. SECURITY MODULE */}
+          {/* SECURITY */}
           {activeTab === "security" && (
             <div className="bg-paper/60 backdrop-blur-md rounded-sm shadow-sm border border-line/60 p-8 max-w-md space-y-5">
               <h2 className="text-xs font-bold uppercase tracking-[0.2em] text-ink">Update Staff Passcode</h2>
@@ -552,7 +437,6 @@ export default function StaffPage() {
         </div>
       </div>
 
-      {/* MODALS */}
       {viewOrder && (
         <Modal open={true} onClose={() => setViewOrder(null)} title={`Packing Slip — ${viewOrder.id}`} wide>
           <div className="space-y-4 text-xs">
