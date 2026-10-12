@@ -4,13 +4,14 @@ import { revalidatePath } from "next/cache";
 import { sql } from "drizzle-orm";
 import { db } from "@/db";
 import { LEGAL } from "@/lib/data/content";
-import { BRAND_CONFIG } from "@/lib/brand.config";
 
 export const dynamic = "force-dynamic";
 
+const FALLBACK_MARQUEE = "Dhaka Atelier Hand-Finished | Numbered Micro Runs | Heavyweight Japanese Twill | Garment Washed Character | Complimentary Delivery Over ৳15,000";
+
 const DEFAULT_CONTENT = {
   homepageMode: "editorial",
-  marqueeItems: BRAND_CONFIG.marqueeItems.join(" | "),
+  marqueeItems: FALLBACK_MARQUEE,
   homeContent: {
     heroEyebrow: "Winter Edit — 2026",
     heroHeading: "Quiet warmth.\nLasting form.",
@@ -45,11 +46,11 @@ const DEFAULT_CONTENT = {
     point3Body: "The Core Collection never goes on seasonal sale and is never replaced — only refined. Scarcity should be honest or not exist at all.",
   },
   legal: {
-    shipping: LEGAL["shipping-policy"]?.body?.join("\n\n") || "",
-    returns: LEGAL["return-policy"]?.body?.join("\n\n") || "",
-    privacy: LEGAL["privacy"]?.body?.join("\n\n") || "",
-    terms: LEGAL["terms"]?.body?.join("\n\n") || "",
-    cookies: LEGAL["cookies"]?.body?.join("\n\n") || "",
+    shipping: LEGAL?.["shipping-policy"]?.body?.join("\n\n") || "",
+    returns: LEGAL?.["return-policy"]?.body?.join("\n\n") || "",
+    privacy: LEGAL?.["privacy"]?.body?.join("\n\n") || "",
+    terms: LEGAL?.["terms"]?.body?.join("\n\n") || "",
+    cookies: LEGAL?.["cookies"]?.body?.join("\n\n") || "",
   },
   socials: {
     instagram: "https://instagram.com",
@@ -60,23 +61,11 @@ const DEFAULT_CONTENT = {
   faqs: [
     {
       q: "How do I track my order?",
-      a: "Once your order is confirmed and dispatched from our Dhaka studio, you will receive an SMS and email notification with your courier tracking reference (Steadfast / Pathao).",
+      a: "Once your order is confirmed and dispatched from our Dhaka studio, you will receive an SMS and email notification with your courier tracking reference.",
     },
     {
       q: "Where do you deliver and what are the rates?",
-      a: "We deliver nationwide across all 64 districts in Bangladesh. Standard delivery inside Dhaka metro is ৳100 (24–48 hours). Delivery outside Dhaka is ৳150 (2–4 working days). Orders exceeding ৳15,000 receive complimentary delivery.",
-    },
-    {
-      q: "How does Cash on Delivery (COD) work?",
-      a: "To confirm a Cash on Delivery order, the parcel delivery charge (৳100 inside Dhaka or ৳150 outside Dhaka) must be paid in advance via bKash or Nagad. The remaining garment price is paid directly in cash to the courier upon receiving your parcel.",
-    },
-    {
-      q: "What is your exchange and return policy?",
-      a: "Unworn garments with security tags attached in original packaging may be exchanged for size or store credit within 14 days of delivery.",
-    },
-    {
-      q: "Which payment options do you support?",
-      a: "We accept Cash on Delivery (with advance delivery fee), as well as Full Payment via bKash and Nagad Personal Send Money.",
+      a: "We deliver nationwide across all 64 districts in Bangladesh.",
     },
   ],
 };
@@ -95,14 +84,14 @@ export async function GET() {
       SELECT content FROM store_content WHERE id = 'site_content' LIMIT 1;
     `);
 
-    if (result.rows && result.rows.length > 0) {
+    if (result && result.rows && result.rows.length > 0) {
       const data = result.rows[0].content || {};
       return NextResponse.json({
         success: true,
         content: {
           about: { ...DEFAULT_CONTENT.about, ...(data.about || {}) },
           legal: { ...DEFAULT_CONTENT.legal, ...(data.legal || {}) },
-          socials: { ...DEFAULT_CONFIG_SOCIALS(data.socials) },
+          socials: { ...DEFAULT_CONTENT.socials, ...(data.socials || {}) },
           faqs: Array.isArray(data.faqs) && data.faqs.length > 0 ? data.faqs : DEFAULT_CONTENT.faqs,
           homepageMode: data.homepageMode || "editorial",
           marqueeItems: data.marqueeItems || DEFAULT_CONTENT.marqueeItems,
@@ -117,10 +106,6 @@ export async function GET() {
     console.error("Content fetch error:", error);
     return NextResponse.json({ success: true, content: DEFAULT_CONTENT });
   }
-}
-
-function DEFAULT_CONFIG_SOCIALS(socialsData: any) {
-  return { ...DEFAULT_CONTENT.socials, ...(socialsData || {}) };
 }
 
 export async function POST(req: NextRequest) {
@@ -143,14 +128,16 @@ export async function POST(req: NextRequest) {
         updated_at = NOW();
     `);
 
-    revalidatePath("/", "layout");
-    revalidatePath("/about");
-    revalidatePath("/shop");
-    revalidatePath("/contact");
+    try {
+      revalidatePath("/", "layout");
+      revalidatePath("/about");
+      revalidatePath("/shop");
+      revalidatePath("/contact");
+    } catch {}
 
     return NextResponse.json({
       success: true,
-      message: "Website content & settings updated live!",
+      message: "Website content & settings updated live in database!",
     });
   } catch (error) {
     console.error("Content save error:", error);
