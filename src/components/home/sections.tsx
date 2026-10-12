@@ -29,11 +29,10 @@ const DEFAULT_BANNERS: BannersConfig = {
 
 /* ————————————————— SECTION 1 — HERO ————————————————— */
 export function Hero({ banner = DEFAULT_BANNERS.hero, content }: { banner?: string; content?: any }) {
-  const eyebrow = content?.heroEyebrow || "New Season — SS26";
-  const heading = content?.heroHeading || "Form / Function";
-  const body =
-    content?.heroBody ||
-    "Heavyweight jersey, tailored wool and considered outerwear. Quiet garments, engineered to be worn for years — not seasons.";
+  // যদি content অবজেক্টে ফিল্ড থাকে এবং সেটা খালি স্ট্রিং "" হয়, তাহলে ফাঁকাই থাকবে (ডিফল্ট দেখাবে না)
+  const eyebrow = content?.heroEyebrow !== undefined ? content.heroEyebrow : "";
+  const heading = content?.heroHeading !== undefined ? content.heroHeading : "";
+  const body = content?.heroBody !== undefined ? content.heroBody : "";
 
   return (
     <section className="relative -mt-16 flex min-h-[100svh] items-end overflow-hidden pt-16 group" aria-label="New season hero">
@@ -45,19 +44,19 @@ export function Hero({ banner = DEFAULT_BANNERS.hero, content }: { banner?: stri
       <div className="absolute inset-0 bg-gradient-to-r from-ink/60 via-transparent to-transparent" aria-hidden />
 
       <div className="container-x relative z-10 pb-20 pt-24 text-paper sm:pb-32 sm:pt-36">
-        {eyebrow && (
+        {eyebrow && eyebrow.trim() !== "" && (
           <Reveal>
             <p className="eyebrow !text-gold-light font-mono font-medium tracking-[0.28em] drop-shadow-sm">{eyebrow}</p>
           </Reveal>
         )}
-        {heading && (
+        {heading && heading.trim() !== "" && (
           <Reveal delay={100}>
             <h1 className="mt-4 max-w-5xl font-display text-[13vw] leading-[0.92] tracking-tight sm:text-[9vw] lg:text-[6.8rem] font-normal text-paper whitespace-pre-line text-balance drop-shadow-md">
               {heading}
             </h1>
           </Reveal>
         )}
-        {body && (
+        {body && body.trim() !== "" && (
           <Reveal delay={180}>
             <p className="mt-6 max-w-md text-[14px] leading-[1.8] text-paper/85 sm:text-[16px] font-light whitespace-pre-line">
               {body}
@@ -92,17 +91,18 @@ export function Hero({ banner = DEFAULT_BANNERS.hero, content }: { banner?: stri
 
 /* ————————————————— VALUE MARQUEE (CMS CONTROLLED) ————————————————— */
 export function ValueMarquee({ itemsString }: { itemsString?: string }) {
+  // যদি এডমিন প্যানেল থেকে ফাঁকা রাখা হয়, তাহলে মারকুই সেকশনই দেখাবে না
+  if (itemsString !== undefined && itemsString.trim() === "") {
+    return null;
+  }
+
   const rawList = typeof itemsString === "string" && itemsString.trim().length > 0 
     ? itemsString.split("|") 
-    : (BRAND_CONFIG.marqueeItems || [
-        "Dhaka Atelier Hand-Finished",
-        "Numbered Micro Runs",
-        "Heavyweight Japanese Twill",
-        "Garment Washed Character",
-        "Complimentary Delivery Over ৳15,000",
-      ]);
+    : (BRAND_CONFIG.marqueeItems || []);
 
   const items = rawList.map((s) => String(s).trim()).filter(Boolean);
+
+  if (items.length === 0) return null;
 
   return (
     <div className="border-b border-line/60 bg-paper py-4 sm:py-5 overflow-hidden">
@@ -122,11 +122,9 @@ export function ValueMarquee({ itemsString }: { itemsString?: string }) {
 
 /* ————————————————— SECTION 2 — FEATURED COLLECTION ————————————————— */
 export function FeaturedCollection({ banner = DEFAULT_BANNERS.collection, content }: { banner?: string; content?: any }) {
-  const eyebrow = content?.featuredEyebrow || "Featured Collection";
-  const heading = content?.featuredHeading || "The New\nCollection";
-  const body =
-    content?.featuredBody ||
-    "Carefully developed pieces crafted in luxury cloth — slower construction, nothing decorative. Built to sit alongside every garment you already own.";
+  const eyebrow = content?.featuredEyebrow !== undefined ? content.featuredEyebrow : "";
+  const heading = content?.featuredHeading !== undefined ? content.featuredHeading : "";
+  const body = content?.featuredBody !== undefined ? content.featuredBody : "";
 
   return (
     <section className="container-x py-24 lg:py-36" aria-label="The new collection">
@@ -139,19 +137,19 @@ export function FeaturedCollection({ banner = DEFAULT_BANNERS.collection, conten
           </Link>
         </Reveal>
         <div className="lg:col-span-5 lg:pl-4">
-          {eyebrow && (
+          {eyebrow && eyebrow.trim() !== "" && (
             <Reveal>
               <p className="eyebrow !text-gold-dark font-mono font-semibold tracking-[0.25em]">{eyebrow}</p>
             </Reveal>
           )}
-          {heading && (
+          {heading && heading.trim() !== "" && (
             <Reveal delay={100}>
               <h2 className="mt-4 font-display text-4xl leading-[1.08] sm:text-5xl lg:text-6xl font-medium text-ink whitespace-pre-line tracking-tight">
                 {heading}
               </h2>
             </Reveal>
           )}
-          {body && (
+          {body && body.trim() !== "" && (
             <Reveal delay={180}>
               <p className="mt-6 max-w-sm text-[14px] leading-[1.8] text-ash font-light whitespace-pre-line">{body}</p>
             </Reveal>
@@ -226,29 +224,27 @@ export function CategorySplit({ menBanner = DEFAULT_BANNERS.men, womenBanner = D
 
 /* ————————————————— SECTION 5 — BRAND STORY ————————————————— */
 export function Story({ banner = DEFAULT_BANNERS.story, content }: { banner?: string; content?: any }) {
-  const eyebrow = content?.storyEyebrow || "Design Philosophy";
-  const heading = content?.storyHeading || "Designed for movement.\nBuilt with intention.";
-  const body =
-    content?.storyBody ||
-    `${BRAND_CONFIG.brandName} operates from an uncompromising perspective: a narrow wardrobe of heavyweight natural cloths, cut with generous architectural lines.`;
+  const eyebrow = content?.storyEyebrow !== undefined ? content.storyEyebrow : "";
+  const heading = content?.storyHeading !== undefined ? content.storyHeading : "";
+  const body = content?.storyBody !== undefined ? content.storyBody : "";
 
   return (
     <section className="bg-ink text-paper" aria-label="The brand philosophy">
       <div className="container-x grid gap-14 py-24 lg:grid-cols-2 lg:gap-20 lg:py-36 items-center">
         <div className="flex flex-col justify-center">
-          {eyebrow && (
+          {eyebrow && eyebrow.trim() !== "" && (
             <Reveal>
               <p className="eyebrow !text-gold font-mono font-semibold tracking-[0.25em]">{eyebrow}</p>
             </Reveal>
           )}
-          {heading && (
+          {heading && heading.trim() !== "" && (
             <Reveal delay={100}>
               <h2 className="mt-5 font-display text-4xl leading-[1.12] sm:text-5xl font-light whitespace-pre-line text-balance tracking-tight">
                 {heading}
               </h2>
             </Reveal>
           )}
-          {body && (
+          {body && body.trim() !== "" && (
             <Reveal delay={180}>
               <div className="mt-8 max-w-md text-[14px] leading-[1.8] text-paper/75 font-light whitespace-pre-line">
                 <p>{body}</p>
@@ -278,29 +274,27 @@ export function Story({ banner = DEFAULT_BANNERS.story, content }: { banner?: st
 
 /* ————————————————— SECTION 6 — COLLECTION FEATURE ————————————————— */
 export function CollectionFeature({ banner = DEFAULT_BANNERS.hero, content }: { banner?: string; content?: any }) {
-  const eyebrow = content?.coreEyebrow || "Permanent Line";
-  const heading = content?.coreHeading || "Core 01";
-  const body =
-    content?.coreBody ||
-    "The permanent uniform. Seasonless garments in heavyweight earth tones — continually restocked, refined, and never discounted.";
+  const eyebrow = content?.coreEyebrow !== undefined ? content.coreEyebrow : "";
+  const heading = content?.coreHeading !== undefined ? content.coreHeading : "";
+  const body = content?.coreBody !== undefined ? content.coreBody : "";
 
   return (
     <section className="container-x py-24 lg:py-36" aria-label="Core collection">
       <div className="grid items-center gap-12 lg:grid-cols-12">
         <div className="order-2 lg:order-1 lg:col-span-4">
-          {eyebrow && (
+          {eyebrow && eyebrow.trim() !== "" && (
             <Reveal>
               <p className="eyebrow !text-gold-dark font-mono font-semibold tracking-[0.25em]">{eyebrow}</p>
             </Reveal>
           )}
-          {heading && (
+          {heading && heading.trim() !== "" && (
             <Reveal delay={100}>
               <h2 className="mt-4 font-display text-5xl tracking-tight sm:text-6xl font-light text-ink whitespace-pre-line">
                 {heading}
               </h2>
             </Reveal>
           )}
-          {body && (
+          {body && body.trim() !== "" && (
             <Reveal delay={180}>
               <p className="mt-6 max-w-sm text-[14px] leading-[1.8] text-ash font-light whitespace-pre-line">{body}</p>
             </Reveal>
@@ -384,23 +378,21 @@ export function ProductHighlight({ product }: { product?: Product | null }) {
 
 /* ————————————————— SECTION 8 — NEWSLETTER ————————————————— */
 export function NewsletterSection({ content }: { content?: any }) {
-  const eyebrow = content?.newsletterEyebrow || "Atelier Dispatch";
-  const heading = content?.newsletterHeading || "Stay in Form";
-  const body =
-    content?.newsletterBody ||
-    "New pieces, private restocks and studio notes. Strictly one letter a month — never more, always worth opening.";
+  const eyebrow = content?.newsletterEyebrow !== undefined ? content.newsletterEyebrow : "";
+  const heading = content?.newsletterHeading !== undefined ? content.newsletterHeading : "";
+  const body = content?.newsletterBody !== undefined ? content.newsletterBody : "";
 
   return (
     <section className="container-x py-24 lg:py-36" aria-label="Newsletter">
       <Reveal className="mx-auto max-w-3xl border border-line bg-paper p-8 sm:p-16 text-center rounded-xs shadow-sm">
-        {eyebrow && (
+        {eyebrow && eyebrow.trim() !== "" && (
           <div className="inline-flex items-center gap-2 border border-gold/40 bg-gold/10 px-4 py-1.5 text-[10px] font-mono uppercase tracking-[0.25em] text-gold-dark mb-5 rounded-xs">
             <Sparkles className="size-3" />
             <span className="font-semibold">{eyebrow}</span>
           </div>
         )}
-        {heading && <h2 className="mt-2 font-display text-4xl sm:text-5xl font-light text-ink tracking-tight">{heading}</h2>}
-        {body && <p className="mt-5 text-[14px] leading-[1.8] text-ash max-w-md mx-auto font-light whitespace-pre-line">{body}</p>}
+        {heading && heading.trim() !== "" && <h2 className="mt-2 font-display text-4xl sm:text-5xl font-light text-ink tracking-tight">{heading}</h2>}
+        {body && body.trim() !== "" && <p className="mt-5 text-[14px] leading-[1.8] text-ash max-w-md mx-auto font-light whitespace-pre-line">{body}</p>}
         <div className="mt-10 w-full max-w-md mx-auto">
           <NewsletterForm />
         </div>
