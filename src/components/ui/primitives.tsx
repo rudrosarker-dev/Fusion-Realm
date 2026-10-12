@@ -1,4 +1,3 @@
-// START OF FILE src/components/ui/primitives.tsx
 "use client";
 
 import { ChevronDown, ChevronRight, Loader2, Minus, Plus, SearchX } from "lucide-react";
@@ -17,27 +16,27 @@ import type { LucideIcon } from "lucide-react";
 type BtnVariant = "primary" | "outline" | "ghost" | "inverse" | "gold";
 type BtnSize = "sm" | "md" | "lg";
 
+// একদম শার্প এবং হোভার করলে লেখা ছড়িয়ে যাবে (Luxury Aesthetic)
 const btnBase =
-  "relative inline-flex items-center justify-center gap-2 uppercase tracking-[0.2em] transition-all duration-300 disabled:cursor-not-allowed disabled:pointer-events-none disabled:opacity-40 select-none cursor-pointer rounded-xs overflow-hidden";
+  "relative inline-flex items-center justify-center gap-2 uppercase tracking-[0.2em] transition-all duration-500 ease-out disabled:cursor-not-allowed disabled:pointer-events-none disabled:opacity-40 select-none cursor-pointer rounded-none overflow-hidden hover:tracking-[0.26em]";
 
 const btnSizes: Record<BtnSize, string> = {
   sm: "h-9 px-5 text-[10px]",
-  md: "h-11 px-7 text-[11px]",
-  lg: "h-12 px-9 text-[12px]",
+  md: "h-11 px-7 text-[10px]",
+  lg: "h-12 px-9 text-[11px]",
 };
 
-// গ্লোবাল বাটন স্টাইল আপডেট করা হয়েছে - সব জায়গায় প্রিমিয়াম লুক পাওয়ার জন্য
 const btnVariants: Record<BtnVariant, string> = {
   primary:
-    "bg-ink text-paper font-semibold shadow-[0_1px_2px_rgba(0,0,0,0.08),0_4px_14px_rgba(0,0,0,0.14)] hover:bg-gold-dark hover:shadow-[0_6px_20px_rgba(0,0,0,0.18)] hover:-translate-y-0.5 active:translate-y-0 active:scale-[0.98] border border-ink",
+    "bg-ink text-paper font-semibold border border-transparent hover:bg-transparent hover:text-ink hover:border-ink",
   inverse:
-    "bg-paper text-ink font-semibold shadow-[0_1px_2px_rgba(0,0,0,0.06),0_4px_12px_rgba(0,0,0,0.08)] hover:bg-gold-light hover:shadow-[0_4px_20px_rgba(0,0,0,0.12)] hover:-translate-y-0.5 active:translate-y-0 active:scale-[0.98] border border-transparent",
+    "bg-paper text-ink font-semibold border border-transparent hover:bg-transparent hover:text-paper hover:border-paper",
   outline:
-    "bg-transparent text-ink font-semibold border border-ink hover:bg-ink hover:text-paper hover:shadow-[0_4px_16px_rgba(0,0,0,0.12)] hover:-translate-y-0.5 active:translate-y-0 active:scale-[0.98]",
+    "bg-transparent text-ink font-semibold border border-ink hover:bg-ink hover:text-paper",
   ghost:
-    "bg-transparent text-ink font-medium hover:text-gold-dark border-b border-ink/35 hover:border-gold-dark rounded-none px-0 pb-1 tracking-[0.22em] shadow-none",
+    "bg-transparent text-ink font-medium border-b border-ink/30 hover:border-ink px-0 pb-1.5 shadow-none",
   gold:
-    "bg-gradient-to-b from-[#dfcaa8] to-[#c5a880] text-ink font-semibold border border-[#b8976c] hover:brightness-105 shadow-[0_1px_2px_rgba(0,0,0,0.06),0_4px_12px_rgba(0,0,0,0.08)] hover:shadow-[0_4px_20px_rgba(0,0,0,0.12)] hover:-translate-y-0.5 active:translate-y-0 active:scale-[0.98]",
+    "bg-transparent text-gold-dark font-semibold border border-gold-dark hover:bg-gold-dark hover:text-paper",
 };
 
 interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
@@ -115,7 +114,7 @@ export function Input({ label, error, id, className, ...rest }: InputProps) {
         aria-invalid={!!error}
         aria-describedby={error ? `${inputId}-error` : undefined}
         className={cn(
-          "h-11 border border-line bg-paper/60 px-4 text-xs text-ink outline-none transition-colors focus:border-[#c5a880] focus:bg-paper rounded-xs placeholder:text-fog",
+          "h-11 border border-line bg-paper/60 px-4 text-xs text-ink outline-none transition-colors focus:border-[#c5a880] focus:bg-paper rounded-none placeholder:text-fog",
           error ? "border-error focus:border-error" : "border-line",
           className
         )}
@@ -147,7 +146,7 @@ export function Select({ label, options, error, id, className, ...rest }: Select
           id={selectId}
           aria-invalid={!!error}
           className={cn(
-            "h-11 w-full appearance-none border border-line bg-paper/60 px-4 pr-10 text-xs text-ink outline-none transition-colors focus:border-[#c5a880] cursor-pointer rounded-xs",
+            "h-11 w-full appearance-none border border-line bg-paper/60 px-4 pr-10 text-xs text-ink outline-none transition-colors focus:border-[#c5a880] cursor-pointer rounded-none",
             error ? "border-error" : "border-line",
             className
           )}
@@ -210,7 +209,7 @@ export function QtyStepper({
     small ? "size-8" : "size-11"
   );
   return (
-    <div className={cn("inline-flex items-center border border-line bg-paper rounded-xs overflow-hidden", small ? "h-8" : "h-11")}>
+    <div className={cn("inline-flex items-center border border-line bg-paper rounded-none overflow-hidden", small ? "h-8" : "h-11")}>
       <button type="button" aria-label="Decrease quantity" className={btn} disabled={qty <= min} onClick={() => onChange(qty - 1)}>
         <Minus className="size-3.5" strokeWidth={1.5} />
       </button>
@@ -291,7 +290,7 @@ export function Badge({
   return (
     <span
       className={cn(
-        "inline-flex items-center px-2.5 py-0.5 text-[9px] font-bold uppercase tracking-[0.18em] rounded-2xs",
+        "inline-flex items-center px-2.5 py-0.5 text-[9px] font-bold uppercase tracking-[0.18em] rounded-none",
         tone === "neutral" && "bg-paper text-ink border border-line",
         tone === "dark" && "bg-ink text-paper",
         tone === "sale" && "bg-[#8b2b1c] text-paper",
@@ -321,7 +320,7 @@ export function EmptyState({
   onAction?: () => void;
 }) {
   return (
-    <div className="flex flex-col items-center justify-center gap-4 py-20 text-center border border-line bg-cream/20 p-8 rounded-xs">
+    <div className="flex flex-col items-center justify-center gap-4 py-20 text-center border border-line bg-cream/20 p-8 rounded-none">
       <div className="size-14 rounded-full bg-paper border border-line flex items-center justify-center text-fog">
         <Icon className="size-6 text-gold-dark" strokeWidth={1.2} />
       </div>
@@ -342,4 +341,3 @@ export function EmptyState({
     </div>
   );
 }
-// END OF FILE src/components/ui/primitives.tsx
