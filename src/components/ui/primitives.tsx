@@ -16,27 +16,28 @@ import type { LucideIcon } from "lucide-react";
 type BtnVariant = "primary" | "outline" | "ghost" | "inverse" | "gold";
 type BtnSize = "sm" | "md" | "lg";
 
-// একদম শার্প এবং হোভার করলে লেখা ছড়িয়ে যাবে (Luxury Aesthetic)
+// Admin Panel Style: rounded-md, bold, stable transition
 const btnBase =
-  "relative inline-flex items-center justify-center gap-2 uppercase tracking-[0.2em] transition-all duration-500 ease-out disabled:cursor-not-allowed disabled:pointer-events-none disabled:opacity-40 select-none cursor-pointer rounded-none overflow-hidden hover:tracking-[0.26em]";
+  "relative inline-flex items-center justify-center gap-2.5 font-bold uppercase tracking-[0.18em] transition-all duration-300 ease-out disabled:cursor-not-allowed disabled:pointer-events-none disabled:opacity-40 select-none cursor-pointer rounded-md overflow-hidden";
 
 const btnSizes: Record<BtnSize, string> = {
   sm: "h-9 px-5 text-[10px]",
-  md: "h-11 px-7 text-[10px]",
+  md: "h-11 px-7 text-[11px]",
   lg: "h-12 px-9 text-[11px]",
 };
 
+// Golden Dashboard Vibe: Bottom inset shadow creates that glowing base line
 const btnVariants: Record<BtnVariant, string> = {
   primary:
-    "bg-ink text-paper font-semibold border border-transparent hover:bg-transparent hover:text-ink hover:border-ink",
+    "bg-[#0e0d0b] text-[#f6f3eb] shadow-[inset_0px_-2px_0px_0px_rgba(197,168,128,0.4),0_4px_10px_rgba(0,0,0,0.1)] hover:shadow-[inset_0px_-2px_0px_0px_rgba(197,168,128,0.8),0_6px_15px_rgba(0,0,0,0.15)] hover:text-[#dfcaa8] hover:-translate-y-0.5 active:translate-y-0",
   inverse:
-    "bg-paper text-ink font-semibold border border-transparent hover:bg-transparent hover:text-paper hover:border-paper",
+    "bg-[#f6f3eb] text-[#0e0d0b] shadow-[inset_0px_-2px_0px_0px_rgba(0,0,0,0.1),0_4px_10px_rgba(0,0,0,0.05)] hover:shadow-[inset_0px_-2px_0px_0px_rgba(197,168,128,0.5),0_6px_15px_rgba(0,0,0,0.1)] hover:text-[#9e7f55] hover:-translate-y-0.5 active:translate-y-0",
   outline:
-    "bg-transparent text-ink font-semibold border border-ink hover:bg-ink hover:text-paper",
+    "bg-transparent text-[#0e0d0b] border border-[#e0d9ca] shadow-[0_2px_8px_rgba(0,0,0,0.02)] hover:border-[#c5a880] hover:bg-[#c5a880]/5 hover:text-[#9e7f55] hover:-translate-y-0.5 active:translate-y-0",
   ghost:
-    "bg-transparent text-ink font-medium border-b border-ink/30 hover:border-ink px-0 pb-1.5 shadow-none",
+    "bg-transparent text-[#0e0d0b] font-medium border-b border-[#0e0d0b]/30 hover:border-[#9e7f55] hover:text-[#9e7f55] px-0 pb-1 rounded-none shadow-none",
   gold:
-    "bg-transparent text-gold-dark font-semibold border border-gold-dark hover:bg-gold-dark hover:text-paper",
+    "bg-gradient-to-b from-[#dfcaa8] to-[#c5a880] text-[#0e0d0b] border border-[#b8976c] shadow-[inset_0px_-2px_0px_0px_rgba(0,0,0,0.15),0_4px_10px_rgba(0,0,0,0.1)] hover:brightness-105 hover:-translate-y-0.5 active:translate-y-0",
 };
 
 interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
@@ -114,7 +115,7 @@ export function Input({ label, error, id, className, ...rest }: InputProps) {
         aria-invalid={!!error}
         aria-describedby={error ? `${inputId}-error` : undefined}
         className={cn(
-          "h-11 border border-line bg-paper/60 px-4 text-xs text-ink outline-none transition-colors focus:border-[#c5a880] focus:bg-paper rounded-none placeholder:text-fog",
+          "h-11 border border-line bg-paper/60 px-4 text-xs text-ink outline-none transition-colors focus:border-[#c5a880] focus:bg-paper rounded-md placeholder:text-fog",
           error ? "border-error focus:border-error" : "border-line",
           className
         )}
@@ -146,7 +147,7 @@ export function Select({ label, options, error, id, className, ...rest }: Select
           id={selectId}
           aria-invalid={!!error}
           className={cn(
-            "h-11 w-full appearance-none border border-line bg-paper/60 px-4 pr-10 text-xs text-ink outline-none transition-colors focus:border-[#c5a880] cursor-pointer rounded-none",
+            "h-11 w-full appearance-none border border-line bg-paper/60 px-4 pr-10 text-xs text-ink outline-none transition-colors focus:border-[#c5a880] cursor-pointer rounded-md",
             error ? "border-error" : "border-line",
             className
           )}
@@ -209,7 +210,7 @@ export function QtyStepper({
     small ? "size-8" : "size-11"
   );
   return (
-    <div className={cn("inline-flex items-center border border-line bg-paper rounded-none overflow-hidden", small ? "h-8" : "h-11")}>
+    <div className={cn("inline-flex items-center border border-line bg-paper rounded-md overflow-hidden shadow-sm", small ? "h-8" : "h-11")}>
       <button type="button" aria-label="Decrease quantity" className={btn} disabled={qty <= min} onClick={() => onChange(qty - 1)}>
         <Minus className="size-3.5" strokeWidth={1.5} />
       </button>
@@ -290,11 +291,11 @@ export function Badge({
   return (
     <span
       className={cn(
-        "inline-flex items-center px-2.5 py-0.5 text-[9px] font-bold uppercase tracking-[0.18em] rounded-none",
+        "inline-flex items-center px-2.5 py-0.5 text-[9px] font-bold uppercase tracking-[0.18em] rounded-md",
         tone === "neutral" && "bg-paper text-ink border border-line",
         tone === "dark" && "bg-ink text-paper",
         tone === "sale" && "bg-[#8b2b1c] text-paper",
-        tone === "new" && "bg-ink text-[#dfcaa8] border border-[#c5a880]/30",
+        tone === "new" && "bg-ink text-[#dfcaa8] border border-[#c5a880]/30 shadow-[inset_0px_-1px_0px_0px_rgba(197,168,128,0.4)]",
         tone === "low" && "bg-bronze text-paper",
         tone === "gold" && "bg-gold/15 text-gold-dark border border-gold/30"
       )}
@@ -320,9 +321,9 @@ export function EmptyState({
   onAction?: () => void;
 }) {
   return (
-    <div className="flex flex-col items-center justify-center gap-4 py-20 text-center border border-line bg-cream/20 p-8 rounded-none">
+    <div className="flex flex-col items-center justify-center gap-4 py-20 text-center border border-line bg-cream/20 p-8 rounded-md">
       <div className="size-14 rounded-full bg-paper border border-line flex items-center justify-center text-fog">
-        <Icon className="size-6 text-gold-dark" strokeWidth={1.2} />
+        <Icon className="size-6 text-[#9e7f55]" strokeWidth={1.2} />
       </div>
       <div className="space-y-1.5">
         <h2 className="font-display text-2xl text-ink">{title}</h2>
