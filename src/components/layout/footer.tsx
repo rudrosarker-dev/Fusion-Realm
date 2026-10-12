@@ -22,7 +22,7 @@ const FacebookIcon = ({ className }: { className?: string }) => (
   </svg>
 );
 
-// হোমপেজের নিউজলেটার সেকশনের জন্য এক্সপোর্ট
+// হোমপেজের জন্য প্রয়োজনীয় এক্সপোর্ট
 export function NewsletterForm({ inverse }: { inverse?: boolean }) {
   const [state, setState] = useState<"idle" | "error" | "done">("idle");
   const [email, setEmail] = useState("");
@@ -97,7 +97,7 @@ export function Footer() {
   });
 
   useEffect(() => {
-    fetch("/api/content", { cache: "no-store" })
+    fetch(`/api/content?t=${Date.now()}`, { cache: "no-store" })
       .then((res) => res.json())
       .then((data) => {
         if (data.content?.socials) {
@@ -174,7 +174,7 @@ export function Footer() {
                 <span className="size-1 rounded-full bg-[#c5a880]" aria-hidden />
                 {col.heading}
               </p>
-              <ul className="flex flex-col gap-3">
+              <ul className="flex flex-col gap-2.5">
                 {col.links.map((l) => (
                   <li key={l.label}>
                     {l.isExternal ? (
@@ -182,18 +182,22 @@ export function Footer() {
                         href={l.href}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="group relative inline-flex items-center text-[11px] uppercase tracking-[0.16em] text-paper/65 hover:text-[#dfcaa8] transition-colors"
+                        className="group inline-flex items-center text-[12px] uppercase tracking-[0.16em] text-paper/70 hover:text-[#dfcaa8] transition-all duration-300 ease-out hover:translate-x-1.5"
                       >
-                        <span>{l.label}</span>
-                        <span className="absolute -bottom-0.5 left-0 right-0 h-px bg-gradient-to-r from-transparent via-[#c5a880] to-transparent scale-x-0 group-hover:scale-x-100 transition-transform duration-300 origin-center" />
+                        <span className="relative">
+                          {l.label}
+                          <span className="absolute -bottom-0.5 left-0 h-px w-0 bg-[#c5a880] transition-all duration-300 group-hover:w-full" />
+                        </span>
                       </a>
                     ) : (
                       <Link
                         href={l.href}
-                        className="group relative inline-flex items-center text-[11px] uppercase tracking-[0.16em] text-paper/65 hover:text-[#dfcaa8] transition-colors"
+                        className="group inline-flex items-center text-[12px] uppercase tracking-[0.16em] text-paper/70 hover:text-[#dfcaa8] transition-all duration-300 ease-out hover:translate-x-1.5"
                       >
-                        <span>{l.label}</span>
-                        <span className="absolute -bottom-0.5 left-0 right-0 h-px bg-gradient-to-r from-transparent via-[#c5a880] to-transparent scale-x-0 group-hover:scale-x-100 transition-transform duration-300 origin-center" />
+                        <span className="relative">
+                          {l.label}
+                          <span className="absolute -bottom-0.5 left-0 h-px w-0 bg-[#c5a880] transition-all duration-300 group-hover:w-full" />
+                        </span>
                       </Link>
                     )}
                   </li>
