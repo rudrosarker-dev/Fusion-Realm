@@ -51,6 +51,7 @@ async function getSiteConfig() {
       story: "/images/story.jpg",
     },
     homepageMode: "editorial",
+    marqueeItems: "Dhaka Atelier Hand-Finished | Numbered Micro Runs | Heavyweight Japanese Twill | Garment Washed Character | Complimentary Delivery Over ৳15,000",
     homeContent: {
       heroEyebrow: "Winter Edit — 2026",
       heroHeading: "Quiet warmth.\nLasting form.",
@@ -83,12 +84,13 @@ async function getSiteConfig() {
 
     const siteContent = contentRes.rows?.[0]?.content || {};
     const homepageMode = siteContent.homepageMode || "editorial";
+    const marqueeItems = siteContent.marqueeItems || defaults.marqueeItems;
     const homeContent = {
       ...defaults.homeContent,
       ...(siteContent.homeContent || {}),
     };
 
-    return { banners, homepageMode, homeContent };
+    return { banners, homepageMode, marqueeItems, homeContent };
   } catch {
     return defaults;
   }
@@ -132,24 +134,14 @@ async function getHomeProducts(): Promise<Product[]> {
 }
 
 export default async function HomePage() {
-  const [{ banners, homepageMode, homeContent }, allProducts] = await Promise.all([
+  const [{ banners, homepageMode, marqueeItems, homeContent }, allProducts] = await Promise.all([
     getSiteConfig(),
     getHomeProducts(),
   ]);
 
-  const jsonLd = {
-    "@context": "https://schema.org",
-    "@type": "Organization",
-    name: "Tholvex Studio",
-    url: "https://tholvexstudio.vercel.app",
-    logo: "https://tholvexstudio.vercel.app/icon.png",
-    description: "Independent fashion house designing quiet, precise garments in Dhaka.",
-  };
-
   if (homepageMode === "direct-shop") {
     return (
       <div className="pt-16 bg-cream">
-        <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
         <ShopClient initial={{}} serverProducts={allProducts} />
       </div>
     );
@@ -161,10 +153,8 @@ export default async function HomePage() {
 
   return (
     <main className="bg-paper text-ink min-h-screen">
-      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
-      
       <Hero banner={banners.hero} content={homeContent} />
-      <ValueMarquee />
+      <ValueMarquee itemsString={marqueeItems} />
       <FeaturedCollection banner={banners.collection} content={homeContent} />
       {selected.length > 0 && <SelectedPieces products={selected} />}
       <CategorySplit menBanner={banners.men} womenBanner={banners.women} />
