@@ -1,4 +1,3 @@
-// START OF FILE src/app/checkout/page.tsx
 "use client";
 
 import { ArrowLeft, Check, ChevronDown, Lock, ShoppingBag } from "lucide-react";
@@ -12,16 +11,41 @@ import { cn, LS_KEYS, orderId, readLS, writeLS } from "@/lib/utils";
 import { BRAND_CONFIG } from "@/lib/brand.config";
 import { fbEvents } from "@/lib/analytics";
 
-const DIVISIONS = [
-  "Dhaka",
-  "Chattogram",
-  "Khulna",
-  "Rajshahi",
-  "Sylhet",
-  "Barishal",
-  "Rangpur",
-  "Mymensingh",
-];
+// বাংলাদেশের ৮টি বিভাগ ও সংশ্লিষ্ট ৬৪টি জেলার ডাটাবেজ
+const BD_DIVISIONS_DATA: Record<string, string[]> = {
+  Dhaka: [
+    "Dhaka", "Gazipur", "Narayanganj", "Tangail", "Narsingdi", 
+    "Faridpur", "Gopalganj", "Kishoreganj", "Madaripur", "Manikganj", 
+    "Munshiganj", "Rajbari", "Shariatpur"
+  ],
+  Chattogram: [
+    "Chattogram", "Cox's Bazar", "Cumilla", "Feni", "Brahmanbaria", 
+    "Noakhali", "Chandpur", "Lakshmipur", "Rangamati", "Khagrachhari", "Bandarban"
+  ],
+  Rajshahi: [
+    "Rajshahi", "Bogura", "Pabna", "Sirajganj", "Naogaon", 
+    "Natore", "Chapainawabganj", "Joypurhat"
+  ],
+  Khulna: [
+    "Khulna", "Jashore", "Kushtia", "Satkhira", "Bagerhat", 
+    "Jhenaidah", "Chuadanga", "Meherpur", "Magura", "Narail"
+  ],
+  Sylhet: [
+    "Sylhet", "Moulvibazar", "Habiganj", "Sunamganj"
+  ],
+  Barishal: [
+    "Barishal", "Patuakhali", "Bhola", "Pirojpur", "Barguna", "Jhalokathi"
+  ],
+  Rangpur: [
+    "Rangpur", "Dinajpur", "Kurigram", "Gaibandha", "Nilphamari", 
+    "Panchagarh", "Thakurgaon", "Lalmonirhat"
+  ],
+  Mymensingh: [
+    "Mymensingh", "Jamalpur", "Netrokona", "Sherpur"
+  ]
+};
+
+const DIVISIONS = Object.keys(BD_DIVISIONS_DATA);
 
 const STEPS = ["Contact", "Shipping", "Payment", "Review"];
 
@@ -30,7 +54,7 @@ interface Form {
   fullName: string;
   phone: string;
   address: string;
-  city: string;
+  city: string; // District
   division: string;
   postalCode: string;
   country: string;
@@ -45,7 +69,7 @@ const initialForm: Form = {
   fullName: "",
   phone: "",
   address: "",
-  city: "",
+  city: "Dhaka",
   division: "Dhaka",
   postalCode: "",
   country: "Bangladesh",
@@ -91,11 +115,13 @@ export default function CheckoutPage() {
     }
   }, [items, subtotalBDT]);
 
-  const isInsideDhaka = form.city.trim().toLowerCase() === "dhaka" || form.division === "Dhaka";
+  // কুরিয়ার রুলস: বিভাগ ঢাকা এবং জেলা ঢাকা হলেই ১০০ টাকা, বাকি সব জেলা ও বিভাগে ১৫০ টাকা!
+  const isInsideDhakaCity = form.division === "Dhaka" && form.city === "Dhaka";
+
   const shippingFee = useMemo(() => {
     if (subtotalBDT >= BRAND_CONFIG.shipping.freeShippingThreshold) return 0;
-    return isInsideDhaka ? BRAND_CONFIG.shipping.insideDhakaFee : BRAND_CONFIG.shipping.outsideDhakaFee;
-  }, [isInsideDhaka, subtotalBDT]);
+    return isInsideDhakaCity ? BRAND_CONFIG.shipping.insideDhakaFee : BRAND_CONFIG.shipping.outsideDhakaFee;
+  }, [isInsideDhakaCity, subtotalBDT]);
 
   const totalBDT = Math.max(0, subtotalBDT - discountBDT) + shippingFee;
   const advancePayable = form.paymentMethod === "cod" ? shippingFee : totalBDT;
@@ -106,6 +132,16 @@ export default function CheckoutPage() {
     setErrors((e) => ({ ...e, [k]: undefined }));
   };
 
+  // বিভাগ পরিবর্তন হওয়ামাত্র জেলা স্বয়ংক্রিয়ভাবে ওই বিভাগের ১ম জেলাতে সেট হবে
+  const handleDivisionChange = (newDivision: string) => {
+    const districtsForDivision = BD_DIVISIONS_DATA[newDivision] || [];
+    setForm((f) => ({
+      ...f,
+      division: newDivision,
+      city: districtsForDivision[0] || "",
+    }));
+  };
+
   const validate = (s: number): boolean => {
     const e: Partial<Record<keyof Form, string>> = {};
     if (s === 0) {
@@ -114,8 +150,8 @@ export default function CheckoutPage() {
       if (!/^\+?[\d\s-]{10,15}$/.test(form.phone.trim())) e.phone = "Enter a valid phone number.";
     }
     if (s === 1) {
-      if (form.address.trim().length < 5) e.address = "Enter your street address.";
-      if (form.city.trim().length < 2) e.city = "Enter your city/district.";
+      if (form.address.trim().length < 5) e.address = "Enter your detailed street address.";
+      if (!form.city) e.city = "Please select your city / district.";
       if (form.postalCode && !/^\d{4}$/.test(form.postalCode)) e.postalCode = "Postal code must be 4 digits.";
     }
     if (s === 2) {
@@ -147,7 +183,7 @@ export default function CheckoutPage() {
   const next = () => {
     if (!validate(step)) return;
 
-    // সাইলেন্ট ব্যাকগ্রাউন্ড সিঙ্ক: কাস্টমার স্টেপ পার করলেই ড্রাফট কার্ট সেভ হয়ে যাবে
+    // সাইলেন্ট ব্যাকগ্রাউন্ড সিঙ্ক: কাস্টমার স্টেপ পার করলেই ড্রাফট কার্ট সেভ হবে
     if (form.phone.trim().length >= 10 && items.length > 0) {
       fetch("/api/abandoned-cart", {
         method: "POST",
@@ -193,7 +229,9 @@ export default function CheckoutPage() {
           postalCode: form.postalCode,
           country: form.country,
         },
-        shippingMethod: isInsideDhaka ? `Inside Dhaka (৳${BRAND_CONFIG.shipping.insideDhakaFee})` : `Outside Dhaka (৳${BRAND_CONFIG.shipping.outsideDhakaFee})`,
+        shippingMethod: isInsideDhakaCity
+          ? `Inside Dhaka (৳${BRAND_CONFIG.shipping.insideDhakaFee})`
+          : `Outside Dhaka (৳${BRAND_CONFIG.shipping.outsideDhakaFee})`,
         shippingBDT: shippingFee,
         discountBDT,
         subtotalBDT,
@@ -244,7 +282,7 @@ export default function CheckoutPage() {
         }),
       }).catch((err) => console.error("Database order sync error:", err));
 
-      // ২. সফল অর্ডার হওয়ায় ড্রাফট কার্টটি ডাটাবেজ থেকে মুছে ফেলা
+      // ২. সফল অর্ডার হওয়ায় ড্রাফট কার্ট মুছে ফেলা
       fetch(`/api/abandoned-cart?phone=${encodeURIComponent(form.phone.trim())}`, {
         method: "DELETE",
       }).catch(() => {});
@@ -329,7 +367,7 @@ export default function CheckoutPage() {
         {couponCode && discountBDT > 0 ? (
           <div className="flex items-center justify-between bg-paper px-3 py-2.5 text-xs text-success">
             <span>{couponCode} applied</span>
-            <button type="button" onClick={removeCoupon} className="text-fog underline-offset-2 hover:text-error hover:underline">
+            <button type="button" onClick={removeCoupon} className="text-fog underline-offset-2 hover:text-error hover:underline cursor-pointer">
               Remove
             </button>
           </div>
@@ -340,7 +378,7 @@ export default function CheckoutPage() {
               value={code}
               onChange={(e) => setCode(e.target.value)}
               placeholder="Promo code"
-              className="h-10 flex-1 border border-line bg-paper px-3 text-xs placeholder:text-fog focus:border-ink"
+              className="h-10 flex-1 border border-line bg-paper px-3 text-xs placeholder:text-fog focus:border-ink outline-none"
             />
             <button
               type="button"
@@ -349,7 +387,7 @@ export default function CheckoutPage() {
                 push(r.ok ? "success" : "error", r.ok ? "Code applied." : (r.reason ?? "Invalid code."));
                 if (r.ok) setCode("");
               }}
-              className="border border-ink px-3.5 text-[10px] font-medium uppercase tracking-[0.14em] transition-colors hover:bg-ink hover:text-paper"
+              className="border border-ink px-3.5 text-[10px] font-medium uppercase tracking-[0.14em] transition-colors hover:bg-ink hover:text-paper cursor-pointer"
             >
               Apply
             </button>
@@ -369,7 +407,7 @@ export default function CheckoutPage() {
           </div>
         )}
         <div className="flex justify-between">
-          <dt className="text-ash">Delivery Charge ({isInsideDhaka ? "Inside Dhaka" : "Outside Dhaka"})</dt>
+          <dt className="text-ash">Delivery Charge ({isInsideDhakaCity ? "Inside Dhaka" : "Outside Dhaka"})</dt>
           <dd>{shippingFee === 0 ? <span className="text-success">Free</span> : <Price amountBDT={shippingFee} />}</dd>
         </div>
         <div className="flex justify-between border-t border-line pt-3 text-base font-medium">
@@ -393,10 +431,13 @@ export default function CheckoutPage() {
     </div>
   );
 
+  // নির্বাচিত বিভাগের আওতাধীন জেলাগুলোর তালিকা
+  const availableDistricts = BD_DIVISIONS_DATA[form.division] || [];
+
   return (
     <div className="container-x pb-24 pt-32 lg:pt-36">
       <div className="flex items-center justify-between">
-        <button onClick={() => (step === 0 ? router.push("/cart") : setStep((s) => s - 1))} className="inline-flex items-center gap-2 text-[11px] font-medium uppercase tracking-[0.16em] text-ash hover:text-ink">
+        <button onClick={() => (step === 0 ? router.push("/cart") : setStep((s) => s - 1))} className="inline-flex items-center gap-2 text-[11px] font-medium uppercase tracking-[0.16em] text-ash hover:text-ink cursor-pointer">
           <ArrowLeft className="size-3.5" strokeWidth={1.5} /> {step === 0 ? "Bag" : "Back"}
         </button>
         <h1 className="font-display text-2xl sm:text-3xl">Checkout</h1>
@@ -411,7 +452,7 @@ export default function CheckoutPage() {
             <button
               type="button"
               onClick={() => i < step && setStep(i)}
-              className="flex items-center gap-2"
+              className="flex items-center gap-2 cursor-pointer"
               aria-current={step === i ? "step" : undefined}
             >
               <span
@@ -433,7 +474,7 @@ export default function CheckoutPage() {
 
       <button
         type="button"
-        className="mt-8 flex w-full items-center justify-between border border-line px-4 py-3 text-[11px] font-medium uppercase tracking-[0.16em] lg:hidden"
+        className="mt-8 flex w-full items-center justify-between border border-line px-4 py-3 text-[11px] font-medium uppercase tracking-[0.16em] lg:hidden cursor-pointer"
         aria-expanded={summaryOpen}
         onClick={() => setSummaryOpen((o) => !o)}
       >
@@ -444,6 +485,7 @@ export default function CheckoutPage() {
 
       <div className="mt-10 grid gap-10 lg:grid-cols-[1.6fr_1fr]">
         <div>
+          {/* STEP 1: CONTACT */}
           {step === 0 && (
             <section aria-label="Contact details" className="flex flex-col gap-5">
               <h2 className="text-[11px] font-medium uppercase tracking-[0.24em]">Contact</h2>
@@ -456,31 +498,66 @@ export default function CheckoutPage() {
             </section>
           )}
 
+          {/* STEP 2: SHIPPING (আগে Division, পরে District/City) */}
           {step === 1 && (
             <section aria-label="Shipping address" className="flex flex-col gap-5">
               <h2 className="text-[11px] font-medium uppercase tracking-[0.24em]">Shipping Address</h2>
-              <Input label="Street Address" required value={form.address} onChange={(e) => set("address", e.target.value)} error={errors.address} placeholder="House, road, flat, area" autoComplete="street-address" />
+              
+              <Input 
+                label="Street Address *" 
+                required 
+                value={form.address} 
+                onChange={(e) => set("address", e.target.value)} 
+                error={errors.address} 
+                placeholder="House, road, flat, local area" 
+                autoComplete="street-address" 
+              />
+              
               <div className="grid gap-5 sm:grid-cols-2">
-                <Input label="City / District" required value={form.city} onChange={(e) => set("city", e.target.value)} error={errors.city} placeholder="e.g. Dhaka, Narayanganj, Sylhet" autoComplete="address-level2" />
-                <Select label="Division" value={form.division} onChange={(e) => set("division", e.target.value)} options={DIVISIONS.map((d) => ({ value: d, label: d }))} />
+                {/* ১. আগে কাস্টমার সিলেক্ট করবে বিভাগ (Division) */}
+                <Select
+                  label="Division *"
+                  value={form.division}
+                  onChange={(e) => handleDivisionChange(e.target.value)}
+                  options={DIVISIONS.map((d) => ({ value: d, label: `${d} Division` }))}
+                />
+
+                {/* ২. এরপর সংশ্লিষ্ট বিভাগের জেলা সিলেক্ট করবে (City / District) */}
+                <Select
+                  label="City / District *"
+                  value={form.city}
+                  onChange={(e) => set("city", e.target.value)}
+                  error={errors.city}
+                  options={availableDistricts.map((dst) => ({ value: dst, label: dst }))}
+                />
               </div>
+
               <div className="grid gap-5 sm:grid-cols-2">
                 <Input label="Postal Code" value={form.postalCode} onChange={(e) => set("postalCode", e.target.value)} error={errors.postalCode} placeholder="e.g. 1213" inputMode="numeric" autoComplete="postal-code" />
                 <Select label="Country" value={form.country} disabled options={[{ value: "Bangladesh", label: "Bangladesh" }]} />
               </div>
 
+              {/* ডেলিভারি রেট ডিসপ্লে বক্স */}
               <div className="border border-line bg-cream/70 p-4 mt-2">
                 <p className="text-[10px] uppercase tracking-[0.2em] text-fog">Calculated Delivery Rate</p>
                 <div className="mt-1 flex items-center justify-between text-sm">
-                  <span className="font-medium text-ink">{isInsideDhaka ? "Inside Dhaka Standard Delivery" : "Outside Dhaka Nationwide Delivery"}</span>
+                  <span className="font-medium text-ink">
+                    {isInsideDhakaCity ? "Inside Dhaka Metro Standard Delivery" : `Outside Dhaka (${form.city}, ${form.division}) Delivery`}
+                  </span>
                   <span className="font-semibold text-ink"><Price amountBDT={shippingFee} /></span>
                 </div>
+                <p className="text-xs text-fog mt-1">
+                  {isInsideDhakaCity 
+                    ? "Estimated 24–48 hours delivery within Dhaka Metro city." 
+                    : `Estimated 2–4 days nationwide delivery to ${form.city}.`}
+                </p>
               </div>
 
               <Button onClick={next} className="mt-2 w-fit">Continue to Payment</Button>
             </section>
           )}
 
+          {/* STEP 3: PAYMENT */}
           {step === 2 && (
             <section aria-label="Payment method" className="flex flex-col gap-6">
               <h2 className="text-[11px] font-medium uppercase tracking-[0.24em]">Payment Method</h2>
@@ -489,7 +566,7 @@ export default function CheckoutPage() {
                 <button
                   type="button"
                   onClick={() => set("paymentMethod", "cod")}
-                  className={cn("border p-4 text-left transition-colors", form.paymentMethod === "cod" ? "border-ink bg-cream/40" : "border-line")}
+                  className={cn("border p-4 text-left transition-colors cursor-pointer", form.paymentMethod === "cod" ? "border-ink bg-cream/40" : "border-line")}
                 >
                   <p className="text-xs font-semibold uppercase tracking-wider text-ink">Cash on Delivery</p>
                   <p className="text-xs text-fog mt-1">Pay product price to courier after parcel check. (Delivery fee paid in advance).</p>
@@ -498,7 +575,7 @@ export default function CheckoutPage() {
                 <button
                   type="button"
                   onClick={() => set("paymentMethod", "full-payment")}
-                  className={cn("border p-4 text-left transition-colors", form.paymentMethod === "full-payment" ? "border-ink bg-cream/40" : "border-line")}
+                  className={cn("border p-4 text-left transition-colors cursor-pointer", form.paymentMethod === "full-payment" ? "border-ink bg-cream/40" : "border-line")}
                 >
                   <p className="text-xs font-semibold uppercase tracking-wider text-ink">Full Payment (bKash/Nagad)</p>
                   <p className="text-xs text-fog mt-1">Pay complete order amount upfront via bKash or Nagad.</p>
@@ -530,7 +607,7 @@ export default function CheckoutPage() {
 
                 <div className="grid gap-4 sm:grid-cols-2 pt-2">
                   <Input
-                    label="bKash / Nagad Number"
+                    label="bKash / Nagad Number *"
                     required
                     value={form.senderPhone}
                     onChange={(e) => set("senderPhone", e.target.value)}
@@ -538,7 +615,7 @@ export default function CheckoutPage() {
                     placeholder="01XXXXXXXXX"
                   />
                   <Input
-                    label="Transaction ID (TrxID)"
+                    label="Transaction ID (TrxID) *"
                     required
                     value={form.transactionId}
                     onChange={(e) => set("transactionId", e.target.value.toUpperCase())}
@@ -552,6 +629,7 @@ export default function CheckoutPage() {
             </section>
           )}
 
+          {/* STEP 4: REVIEW */}
           {step === 3 && (
             <section aria-label="Review order" className="flex flex-col gap-6">
               <h2 className="text-[11px] font-medium uppercase tracking-[0.24em]">Review & Place Order</h2>
@@ -559,7 +637,13 @@ export default function CheckoutPage() {
                 {[
                   ["Contact", `${form.email} — ${form.phone}`, 0],
                   ["Delivery Address", `${form.fullName}, ${form.address}, ${form.city}, ${form.division}`, 1],
-                  ["Shipping Rate", isInsideDhaka ? `Inside Dhaka (৳${BRAND_CONFIG.shipping.insideDhakaFee})` : `Outside Dhaka (৳${BRAND_CONFIG.shipping.outsideDhakaFee})`, 1],
+                  [
+                    "Shipping Rate", 
+                    isInsideDhakaCity 
+                      ? `Inside Dhaka Metro (৳${BRAND_CONFIG.shipping.insideDhakaFee})` 
+                      : `Outside Dhaka — ${form.city} (৳${BRAND_CONFIG.shipping.outsideDhakaFee})`, 
+                    1
+                  ],
                   [
                     "Payment Details",
                     form.paymentMethod === "cod"
@@ -571,7 +655,7 @@ export default function CheckoutPage() {
                   <div key={title} className="border border-line p-4">
                     <div className="flex items-center justify-between">
                       <p className="text-[10px] font-medium uppercase tracking-[0.2em] text-fog">{title}</p>
-                      <button type="button" onClick={() => setStep(editStep as number)} className="text-[11px] underline underline-offset-2 hover:text-ash">
+                      <button type="button" onClick={() => setStep(editStep as number)} className="text-[11px] underline underline-offset-2 hover:text-ash cursor-pointer">
                         Edit
                       </button>
                     </div>
@@ -594,4 +678,3 @@ export default function CheckoutPage() {
     </div>
   );
 }
-// END OF FILE src/app/checkout/page.tsx
