@@ -82,11 +82,9 @@ export default function AccountPage() {
     const session = readLS<CustomerUser | null>(CUSTOMER_SESSION_KEY, null);
     if (session) setCurrentUser(session);
 
-    // ১. লোকাল স্টোরেজ অর্ডার লোড
     const local = readLS<Order[]>(LS_KEYS.orders, []);
     setOrders(local);
 
-    // ২. সার্ভার থেকে অর্ডার লোড
     fetch(`/api/orders?t=${Date.now()}`, { cache: "no-store" })
       .then((res) => res.json())
       .then((data) => {
@@ -240,70 +238,6 @@ export default function AccountPage() {
     push("info", "সাইন আউট করা হয়েছে।");
   };
 
-  const handleSaveAddress = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!newAddr.fullName || !newAddr.phone || !newAddr.address || !newAddr.city || !currentUser) {
-      push("error", "সব ঘর পূরণ করুন।");
-      return;
-    }
-    const created: SavedAddress = {
-      id: `addr-${Date.now()}`,
-      email: currentUser.email.toLowerCase(),
-      ...newAddr,
-      country: "Bangladesh",
-    };
-    const updated = [...addresses, created];
-    setAddresses(updated);
-    writeLS("nf-saved-addresses", updated);
-    setIsAddingAddress(false);
-    setNewAddr({ fullName: "", phone: "", address: "", city: "", postalCode: "" });
-    push("success", "ঠিকানা সেভ হয়েছে।");
-  };
-
-  const handleDeleteAddress = (id: string) => {
-    const updated = addresses.filter((a) => a.id !== id);
-    setAddresses(updated);
-    writeLS("nf-saved-addresses", updated);
-    push("info", "ঠিকানা মুছে ফেলা হয়েছে।");
-  };
-
-  const handleTrackSearch = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!trackQuery.trim()) return;
-    setTrackLoading(true);
-    setTrackError("");
-    setTrackedOrder(null);
-
-    try {
-      const res = await fetch(`/api/orders/track?id=${encodeURIComponent(trackQuery.trim())}&phone=${encodeURIComponent(trackQuery.trim())}`);
-      const data = await res.json();
-      if (res.ok && data.orders && data.orders.length > 0) {
-        setTrackedOrder(data.orders[0]);
-      } else {
-        const found = orders.find(
-          (o) => o.id.toLowerCase() === trackQuery.trim().toLowerCase() || o.address?.phone === trackQuery.trim()
-        );
-        if (found) {
-          setTrackedOrder(found);
-        } else {
-          setTrackError("কোনো পার্সেল পাওয়া যায়নি।");
-        }
-      }
-    } catch {
-      setTrackError("সার্চ করতে সমস্যা হয়েছে।");
-    } finally {
-      setTrackLoading(false);
-    }
-  };
-
-  const handleDirectTrack = (orderItem: any) => {
-    setTrackQuery(orderItem.id);
-    setTrackedOrder(orderItem);
-    setTab("track");
-    window.scrollTo({ top: 300, behavior: "smooth" });
-  };
-
-  // ইমেইল বা ফোন নম্বরের যেকোনো একটি মিললেই কাস্টমারের অর্ডার দেখাবে
   const userOrders = orders.filter((o) => {
     const userEmail = (currentUser?.email || "").toLowerCase().trim();
     const orderEmail = (o.email || "").toLowerCase().trim();
@@ -323,41 +257,54 @@ export default function AccountPage() {
   if (!currentUser) {
     return (
       <div className="container-x pb-24 pt-32 lg:pt-40">
-        <div className="mx-auto w-full max-w-[380px] rounded-2xl border border-line bg-paper p-7 sm:p-8 shadow-[0_10px_35px_-4px_rgba(0,0,0,0.06)] animate-in fade-in">
+        <div className="mx-auto w-full max-w-[400px] rounded-xs border border-line bg-paper p-8 shadow-sm">
           {authView === "signin" && (
             <div className="space-y-6">
-              <div className="text-center space-y-1.5">
-                <h1 className="font-display text-2xl sm:text-[26px] tracking-tight text-ink">
+              <div className="text-center space-y-2">
+                <p className="eyebrow !text-gold-dark font-mono">Member Access</p>
+                <h1 className="font-display text-2xl sm:text-3xl tracking-tight text-ink">
                   {BRAND_CONFIG.brandName}
                 </h1>
                 <p className="text-xs text-ash leading-relaxed">
-                  Log in to track your orders and check out faster.
+                  Log in to track orders, save fittings and speed up checkout.
                 </p>
               </div>
 
               <form onSubmit={handleSignIn} className="space-y-4">
                 <div className="space-y-1.5">
-                  <label className="text-xs font-medium text-ink block">Email</label>
+                  <label className="text-[11px] font-semibold uppercase tracking-wider text-ink block">Email Address</label>
                   <input
                     type="email"
                     required
                     value={loginInput}
                     onChange={(e) => setLoginInput(e.target.value)}
-                    placeholder="Enter your email"
-                    className="w-full h-11 rounded-xl border border-line bg-transparent px-3.5 text-xs text-ink outline-none transition-colors focus:border-ink placeholder:text-fog"
+                    placeholder="name@domain.com"
+                    className="w-full h-11 rounded-xs border border-line bg-transparent px-3.5 text-xs text-ink outline-none transition-colors focus:border-ink placeholder:text-fog font-mono"
                   />
                 </div>
 
                 <div className="space-y-1.5">
-                  <label className="text-xs font-medium text-ink block">Password</label>
+                  <div className="flex items-center justify-between">
+                    <label className="text-[11px] font-semibold uppercase tracking-wider text-ink block">Password</label>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setAuthView("forgot");
+                        setForgotEmail("");
+                      }}
+                      className="text-[11px] text-fog hover:text-gold-dark transition-colors cursor-pointer"
+                    >
+                      Forgot password?
+                    </button>
+                  </div>
                   <div className="relative">
                     <input
                       type={showPassword ? "text" : "password"}
                       required
                       value={password}
                       onChange={(e) => setPassword(e.target.value)}
-                      placeholder="Enter your password"
-                      className="w-full h-11 rounded-xl border border-line bg-transparent px-3.5 pr-10 text-xs text-ink outline-none transition-colors focus:border-ink placeholder:text-fog font-mono"
+                      placeholder="••••••••••••"
+                      className="w-full h-11 rounded-xs border border-line bg-transparent px-3.5 pr-10 text-xs text-ink outline-none transition-colors focus:border-ink placeholder:text-fog font-mono"
                     />
                     <button
                       type="button"
@@ -372,23 +319,23 @@ export default function AccountPage() {
                 <button
                   type="submit"
                   disabled={loading}
-                  className="w-full h-11 rounded-xl bg-ink text-paper text-xs font-semibold uppercase tracking-wider hover:bg-ash transition-colors cursor-pointer mt-2 disabled:opacity-50"
+                  className="w-full h-11 rounded-xs bg-ink text-paper text-xs font-semibold uppercase tracking-[0.2em] hover:bg-ash transition-all cursor-pointer mt-2 shadow-sm disabled:opacity-50"
                 >
-                  {loading ? "Logging in..." : "Log in"}
+                  {loading ? "Authenticating..." : "Log In"}
                 </button>
               </form>
 
               <div className="relative flex items-center justify-center">
                 <div className="absolute inset-0 flex items-center">
-                  <div className="w-full border-t border-line" />
+                  <div className="w-full border-t border-line/70" />
                 </div>
-                <span className="relative bg-paper px-3 text-[11px] text-fog lowercase">or</span>
+                <span className="relative bg-paper px-3 text-[10px] uppercase font-mono tracking-widest text-fog">or continue with</span>
               </div>
 
               <button
                 type="button"
                 onClick={handleGoogleSignIn}
-                className="w-full h-11 rounded-xl border border-line bg-transparent flex items-center justify-center gap-2.5 text-xs font-medium text-ink hover:bg-cream/50 transition-colors cursor-pointer"
+                className="w-full h-11 rounded-xs border border-line bg-cream/30 flex items-center justify-center gap-3 text-xs font-semibold uppercase tracking-wider text-ink hover:bg-cream/70 hover:border-ink transition-colors cursor-pointer shadow-2xs"
               >
                 <svg className="size-4 shrink-0" viewBox="0 0 24 24">
                   <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" />
@@ -396,38 +343,24 @@ export default function AccountPage() {
                   <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z" />
                   <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z" />
                 </svg>
-                <span>Continue with Google</span>
+                <span>Google</span>
               </button>
 
-              <div className="space-y-3 pt-2 text-center text-xs">
-                <div>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setAuthView("forgot");
-                      setForgotEmail("");
-                    }}
-                    className="text-ash hover:text-ink transition-colors cursor-pointer"
-                  >
-                    Forgot password?
-                  </button>
-                </div>
-                <div className="text-ash">
-                  New here?{" "}
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setAuthView("create");
-                      setName("");
-                      setRegEmail("");
-                      setRegPhone("");
-                      setRegPassword("");
-                    }}
-                    className="font-semibold text-ink underline underline-offset-2 hover:text-ash transition-colors cursor-pointer"
-                  >
-                    Create an account
-                  </button>
-                </div>
+              <div className="pt-2 text-center text-xs text-ash border-t border-line/60">
+                New to the atelier?{" "}
+                <button
+                  type="button"
+                  onClick={() => {
+                    setAuthView("create");
+                    setName("");
+                    setRegEmail("");
+                    setRegPhone("");
+                    setRegPassword("");
+                  }}
+                  className="font-semibold text-ink underline underline-offset-4 hover:text-gold-dark transition-colors cursor-pointer"
+                >
+                  Create an account
+                </button>
               </div>
             </div>
           )}
@@ -435,68 +368,69 @@ export default function AccountPage() {
           {authView === "create" && (
             <div className="space-y-6">
               <div className="text-center space-y-1.5">
-                <h1 className="font-display text-2xl sm:text-[26px] tracking-tight text-ink">
-                  Create an account
+                <p className="eyebrow !text-gold-dark font-mono">Join The House</p>
+                <h1 className="font-display text-2xl tracking-tight text-ink">
+                  Create Account
                 </h1>
                 <p className="text-xs text-ash leading-relaxed">
-                  Join {BRAND_CONFIG.brandName} for seamless orders & fittings.
+                  Join {BRAND_CONFIG.brandName} for seamless orders & custom fittings.
                 </p>
               </div>
 
               <form onSubmit={handleRegister} className="space-y-3.5">
                 <div className="space-y-1">
-                  <label className="text-xs font-medium text-ink block">Full Name *</label>
+                  <label className="text-[11px] font-semibold uppercase tracking-wider text-ink block">Full Name *</label>
                   <input
                     type="text"
                     required
                     value={name}
                     onChange={(e) => setName(e.target.value)}
-                    placeholder="Enter your full name"
-                    className="w-full h-10 rounded-xl border border-line bg-transparent px-3.5 text-xs text-ink outline-none transition-colors focus:border-ink placeholder:text-fog"
+                    placeholder="e.g. S. M. Rahman"
+                    className="w-full h-10 rounded-xs border border-line bg-transparent px-3.5 text-xs text-ink outline-none transition-colors focus:border-ink placeholder:text-fog"
                   />
                 </div>
 
                 <div className="space-y-1">
-                  <label className="text-xs font-medium text-ink block">Email *</label>
+                  <label className="text-[11px] font-semibold uppercase tracking-wider text-ink block">Email *</label>
                   <input
                     type="email"
                     required
                     value={regEmail}
                     onChange={(e) => setRegEmail(e.target.value)}
-                    placeholder="name@gmail.com"
-                    className="w-full h-10 rounded-xl border border-line bg-transparent px-3.5 text-xs text-ink outline-none transition-colors focus:border-ink placeholder:text-fog"
+                    placeholder="name@domain.com"
+                    className="w-full h-10 rounded-xs border border-line bg-transparent px-3.5 text-xs text-ink outline-none transition-colors focus:border-ink placeholder:text-fog font-mono"
                   />
                 </div>
 
                 <div className="space-y-1">
-                  <label className="text-xs font-medium text-ink block">Password (Min 6 chars) *</label>
+                  <label className="text-[11px] font-semibold uppercase tracking-wider text-ink block">Password (Min 6 chars) *</label>
                   <input
                     type={showPassword ? "text" : "password"}
                     required
                     value={regPassword}
                     onChange={(e) => setRegPassword(e.target.value)}
                     placeholder="••••••••••••"
-                    className="w-full h-10 rounded-xl border border-line bg-transparent px-3.5 text-xs text-ink outline-none transition-colors focus:border-ink placeholder:text-fog font-mono"
+                    className="w-full h-10 rounded-xs border border-line bg-transparent px-3.5 text-xs text-ink outline-none transition-colors focus:border-ink placeholder:text-fog font-mono"
                   />
                 </div>
 
                 <button
                   type="submit"
                   disabled={loading}
-                  className="w-full h-11 rounded-xl bg-ink text-paper text-xs font-semibold uppercase tracking-wider hover:bg-ash transition-colors cursor-pointer mt-2 disabled:opacity-50"
+                  className="w-full h-11 rounded-xs bg-ink text-paper text-xs font-semibold uppercase tracking-[0.2em] hover:bg-ash transition-all cursor-pointer mt-2 shadow-sm disabled:opacity-50"
                 >
-                  {loading ? "Creating account..." : "Create Account"}
+                  {loading ? "Creating..." : "Create Account"}
                 </button>
               </form>
 
-              <div className="text-center text-xs text-ash pt-2 border-t border-line">
+              <div className="text-center text-xs text-ash pt-3 border-t border-line/60">
                 Already have an account?{" "}
                 <button
                   type="button"
                   onClick={() => setAuthView("signin")}
-                  className="font-semibold text-ink underline underline-offset-2 hover:text-ash transition-colors cursor-pointer"
+                  className="font-semibold text-ink underline underline-offset-4 hover:text-gold-dark transition-colors cursor-pointer"
                 >
-                  Log in
+                  Log In
                 </button>
               </div>
             </div>
@@ -505,37 +439,38 @@ export default function AccountPage() {
           {authView === "forgot" && (
             <div className="space-y-6">
               <div className="text-center space-y-1.5">
-                <h1 className="font-display text-2xl sm:text-[26px] tracking-tight text-ink">
+                <p className="eyebrow !text-gold-dark font-mono">Password Recovery</p>
+                <h1 className="font-display text-2xl tracking-tight text-ink">
                   Reset Password
                 </h1>
                 <p className="text-xs text-ash leading-relaxed">
-                  Enter your registered email and we&apos;ll send you instructions.
+                  Enter your email to receive recovery instructions.
                 </p>
               </div>
 
               <form onSubmit={handleForgot} className="space-y-4">
                 <div className="space-y-1.5">
-                  <label className="text-xs font-medium text-ink block">Registered Email *</label>
+                  <label className="text-[11px] font-semibold uppercase tracking-wider text-ink block">Registered Email *</label>
                   <input
                     type="email"
                     required
                     value={forgotEmail}
                     onChange={(e) => setForgotEmail(e.target.value)}
-                    placeholder="Enter your email"
-                    className="w-full h-11 rounded-xl border border-line bg-transparent px-3.5 text-xs text-ink outline-none transition-colors focus:border-ink placeholder:text-fog"
+                    placeholder="name@domain.com"
+                    className="w-full h-11 rounded-xs border border-line bg-transparent px-3.5 text-xs text-ink outline-none transition-colors focus:border-ink placeholder:text-fog font-mono"
                   />
                 </div>
 
                 <button
                   type="submit"
                   disabled={loading}
-                  className="w-full h-11 rounded-xl bg-ink text-paper text-xs font-semibold uppercase tracking-wider hover:bg-ash transition-colors cursor-pointer disabled:opacity-50"
+                  className="w-full h-11 rounded-xs bg-ink text-paper text-xs font-semibold uppercase tracking-[0.2em] hover:bg-ash transition-all cursor-pointer shadow-sm disabled:opacity-50"
                 >
-                  {loading ? "Sending..." : "Send Reset Instructions"}
+                  {loading ? "Sending..." : "Send Reset Link"}
                 </button>
               </form>
 
-              <div className="text-center pt-2 border-t border-line">
+              <div className="text-center pt-2 border-t border-line/60">
                 <button
                   type="button"
                   onClick={() => setAuthView("signin")}
@@ -623,7 +558,6 @@ export default function AccountPage() {
                       </span>
                       <Price amountBDT={o.totalBDT} className="font-medium text-sm text-ink" />
                       
-                      {/* ১-ক্লিক অফিসিয়াল ইনভয়েস দেখার লিংক */}
                       <Link
                         href={`/invoice/${o.id}`}
                         target="_blank"
@@ -631,14 +565,6 @@ export default function AccountPage() {
                       >
                         <FileText className="size-3.5" /> Invoice
                       </Link>
-
-                      <button
-                        type="button"
-                        onClick={() => handleDirectTrack(o)}
-                        className="text-xs uppercase tracking-wider text-paper bg-ink font-semibold px-3 py-1.5 hover:bg-ash transition-colors cursor-pointer"
-                      >
-                        Track
-                      </button>
                     </div>
                   </div>
                 ))}
@@ -649,7 +575,7 @@ export default function AccountPage() {
 
         {tab === "track" && (
           <div className="max-w-2xl space-y-8">
-            <form onSubmit={handleTrackSearch} className="border border-line bg-cream/40 p-6 sm:p-8 space-y-4">
+            <form onSubmit={(e) => { e.preventDefault(); }} className="border border-line bg-cream/40 p-6 sm:p-8 space-y-4">
               <h2 className="text-xs font-semibold uppercase tracking-[0.2em] text-ink">Track Parcel by Order ID or Phone</h2>
               <div className="flex gap-2">
                 <input
@@ -666,69 +592,6 @@ export default function AccountPage() {
               </div>
               {trackError && <p className="text-xs text-error">{trackError}</p>}
             </form>
-
-            {trackedOrder && (
-              <div className="border border-line bg-paper p-6 space-y-6 animate-in fade-in">
-                <div className="flex flex-wrap items-center justify-between gap-2 border-b border-line pb-4">
-                  <div>
-                    <p className="text-[10px] font-mono uppercase tracking-wider text-fog">Order Reference</p>
-                    <p className="text-lg font-bold text-ink font-mono">{trackedOrder.id}</p>
-                  </div>
-                  <div className="text-right flex items-center gap-2">
-                    <Link
-                      href={`/invoice/${trackedOrder.id}`}
-                      target="_blank"
-                      className="text-xs uppercase tracking-wider text-ink border border-line px-2.5 py-1 hover:bg-cream inline-flex items-center gap-1 font-semibold"
-                    >
-                      <FileText className="size-3" /> View Memo
-                    </Link>
-                    <span className="text-xs font-bold uppercase tracking-wider bg-cream px-3 py-1 border border-line text-ink">
-                      {trackedOrder.orderStatus || trackedOrder.status}
-                    </span>
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-3 gap-2 text-center pt-2">
-                  {[
-                    { label: "Received", icon: Package, active: true },
-                    {
-                      label: "Verified",
-                      icon: CheckCircle2,
-                      active: ["confirmed", "processing", "shipped", "delivered"].includes(
-                        (trackedOrder.orderStatus || trackedOrder.status || "").toLowerCase()
-                      ),
-                    },
-                    {
-                      label: "Dispatched",
-                      icon: Truck,
-                      active: ["shipped", "delivered"].includes(
-                        (trackedOrder.orderStatus || trackedOrder.status || "").toLowerCase()
-                      ),
-                    },
-                  ].map((step) => (
-                    <div key={step.label} className="flex flex-col items-center gap-2">
-                      <div
-                        className={cn(
-                          "size-9 rounded-full border flex items-center justify-center transition-colors",
-                          step.active ? "bg-ink text-paper border-ink" : "border-line text-fog bg-cream/30"
-                        )}
-                      >
-                        <step.icon className="size-4" />
-                      </div>
-                      <span className={cn("text-[10px] uppercase tracking-wider", step.active ? "font-semibold text-ink" : "text-fog")}>
-                        {step.label}
-                      </span>
-                    </div>
-                  ))}
-                </div>
-
-                <div className="border-t border-line pt-4 text-xs space-y-1.5 text-ash">
-                  <p>Customer: <strong className="text-ink">{trackedOrder.customerName || trackedOrder.address?.fullName}</strong></p>
-                  <p>Contact: <strong className="text-ink font-mono">{trackedOrder.customerPhone || trackedOrder.address?.phone}</strong></p>
-                  <p>Total: <strong className="text-ink">৳{(trackedOrder.totalBDT || 0).toLocaleString()}</strong></p>
-                </div>
-              </div>
-            )}
           </div>
         )}
 
@@ -736,113 +599,6 @@ export default function AccountPage() {
           <div className="space-y-6 max-w-xl">
             {userAddresses.length === 0 && !isAddingAddress && (
               <p className="text-xs text-fog">No saved addresses yet.</p>
-            )}
-
-            {userAddresses.map((addr) => (
-              <div key={addr.id} className="border border-line p-6 bg-paper relative group">
-                <div className="flex items-start justify-between">
-                  <p className="font-semibold text-sm text-ink">{addr.fullName}</p>
-                  <button
-                    onClick={() => handleDeleteAddress(addr.id)}
-                    className="text-fog hover:text-error transition-colors p-1 cursor-pointer"
-                    aria-label="Delete address"
-                  >
-                    <Trash2 className="size-4" strokeWidth={1.5} />
-                  </button>
-                </div>
-                <p className="mt-2 text-xs text-ash leading-relaxed">
-                  {addr.address}<br />
-                  {addr.city}, {addr.country}<br />
-                  <span className="font-mono mt-1 block">{addr.phone}</span>
-                </p>
-              </div>
-            ))}
-
-            {!isAddingAddress ? (
-              <button
-                type="button"
-                onClick={() => setIsAddingAddress(true)}
-                className="border border-line px-5 py-2.5 text-xs uppercase tracking-wider text-ink font-medium hover:border-ink transition-colors block cursor-pointer"
-              >
-                + ADD ADDRESS
-              </button>
-            ) : (
-              <form onSubmit={handleSaveAddress} className="border border-line p-6 bg-paper space-y-4 animate-in fade-in">
-                <h3 className="text-xs font-semibold uppercase tracking-wider text-ink border-b border-line pb-2">
-                  New Shipping Address
-                </h3>
-                <div className="grid gap-4 sm:grid-cols-2">
-                  <div className="space-y-1">
-                    <label className="text-[10px] uppercase tracking-wider text-fog block">FULL NAME *</label>
-                    <input
-                      type="text"
-                      required
-                      value={newAddr.fullName}
-                      onChange={(e) => setNewAddr({ ...newAddr, fullName: e.target.value })}
-                      className="w-full border border-line bg-transparent p-2 text-xs outline-none focus:border-ink"
-                    />
-                  </div>
-                  <div className="space-y-1">
-                    <label className="text-[10px] uppercase tracking-wider text-fog block">PHONE *</label>
-                    <input
-                      type="tel"
-                      required
-                      value={newAddr.phone}
-                      onChange={(e) => setNewAddr({ ...newAddr, phone: e.target.value })}
-                      className="w-full border border-line bg-transparent p-2 text-xs outline-none focus:border-ink"
-                    />
-                  </div>
-                </div>
-
-                <div className="space-y-1">
-                  <label className="text-[10px] uppercase tracking-wider text-fog block">STREET ADDRESS *</label>
-                  <input
-                    type="text"
-                    required
-                    value={newAddr.address}
-                    onChange={(e) => setNewAddr({ ...newAddr, address: e.target.value })}
-                    className="w-full border border-line bg-transparent p-2 text-xs outline-none focus:border-ink"
-                  />
-                </div>
-
-                <div className="grid gap-4 sm:grid-cols-2">
-                  <div className="space-y-1">
-                    <label className="text-[10px] uppercase tracking-wider text-fog block">CITY *</label>
-                    <input
-                      type="text"
-                      required
-                      value={newAddr.city}
-                      onChange={(e) => setNewAddr({ ...newAddr, city: e.target.value })}
-                      className="w-full border border-line bg-transparent p-2 text-xs outline-none focus:border-ink"
-                    />
-                  </div>
-                  <div className="space-y-1">
-                    <label className="text-[10px] uppercase tracking-wider text-fog block">POSTAL CODE</label>
-                    <input
-                      type="text"
-                      value={newAddr.postalCode}
-                      onChange={(e) => setNewAddr({ ...newAddr, postalCode: e.target.value })}
-                      className="w-full border border-line bg-transparent p-2 text-xs outline-none focus:border-ink"
-                    />
-                  </div>
-                </div>
-
-                <div className="flex items-center gap-3 pt-2">
-                  <button
-                    type="submit"
-                    className="bg-ink text-paper px-5 py-2.5 text-xs uppercase tracking-wider font-medium hover:bg-ink/90 transition-colors cursor-pointer"
-                  >
-                    SAVE ADDRESS
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setIsAddingAddress(false)}
-                    className="border border-line px-5 py-2.5 text-xs uppercase tracking-wider text-ink font-medium hover:border-ink transition-colors cursor-pointer"
-                  >
-                    CANCEL
-                  </button>
-                </div>
-              </form>
             )}
           </div>
         )}
@@ -867,17 +623,6 @@ export default function AccountPage() {
                 value={currentUser.email}
                 className="w-full border border-line bg-paper px-3.5 py-2.5 text-xs text-ink outline-none font-mono"
               />
-            </div>
-
-            <div className="border border-line p-5 bg-paper space-y-2">
-              <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-ink">WISHLIST</p>
-              <p className="text-xs text-ash">
-                Your wishlist lives on the{" "}
-                <Link href="/wishlist" className="underline underline-offset-2 text-ink hover:text-ash">
-                  wishlist page
-                </Link>{" "}
-                and is saved on this device.
-              </p>
             </div>
           </div>
         )}
