@@ -4,13 +4,14 @@ import { revalidatePath } from "next/cache";
 import { sql } from "drizzle-orm";
 import { db } from "@/db";
 import { LEGAL } from "@/lib/data/content";
-import { BRAND_CONFIG } from "@/lib/brand.config";
 
 export const dynamic = "force-dynamic";
 
+const FALLBACK_MARQUEE = "Dhaka Atelier Hand-Finished | Numbered Micro Runs | Heavyweight Japanese Twill | Garment Washed Character | Complimentary Delivery Over ৳15,000";
+
 const DEFAULT_CONTENT = {
   homepageMode: "editorial",
-  marqueeItems: (BRAND_CONFIG.marqueeItems || []).join(" | "),
+  marqueeItems: FALLBACK_MARQUEE,
   homeContent: {
     heroEyebrow: "Winter Edit — 2026",
     heroHeading: "Quiet warmth.\nLasting form.",
@@ -36,20 +37,20 @@ const DEFAULT_CONTENT = {
   },
   about: {
     heading: "Quiet clothes,\nmade loudly well.",
-    story: "Tholvex Studio is an independent fashion house founded in Dhaka.",
+    story: "Tholvex Studio is an independent fashion house founded in Dhaka. We make a deliberately narrow line of garments in heavyweight natural cloth — each fitted eleven times, washed for character, and built to outlast the trend cycle.",
     point1Title: "Cloth First",
-    point1Body: "Every season starts in the fabric archive.",
+    point1Body: "Every season starts in the fabric archive, not on a moodboard. We knit jersey between 260 and 480 grams per square metre and choose wool for how it ages.",
     point2Title: "Eleven Fittings",
-    point2Body: "A silhouette is developed on a stand.",
+    point2Body: "A silhouette is developed on a stand, then on bodies of different builds, until it forgives the most and flatters the widest.",
     point3Title: "Small, Permanent Lines",
-    point3Body: "The Core Collection never goes on seasonal sale.",
+    point3Body: "The Core Collection never goes on seasonal sale and is never replaced — only refined. Scarcity should be honest or not exist at all.",
   },
   legal: {
-    shipping: LEGAL["shipping-policy"]?.body?.join("\n\n") || "",
-    returns: LEGAL["return-policy"]?.body?.join("\n\n") || "",
-    privacy: LEGAL["privacy"]?.body?.join("\n\n") || "",
-    terms: LEGAL["terms"]?.body?.join("\n\n") || "",
-    cookies: LEGAL["cookies"]?.body?.join("\n\n") || "",
+    shipping: LEGAL?.["shipping-policy"]?.body?.join("\n\n") || "",
+    returns: LEGAL?.["return-policy"]?.body?.join("\n\n") || "",
+    privacy: LEGAL?.["privacy"]?.body?.join("\n\n") || "",
+    terms: LEGAL?.["terms"]?.body?.join("\n\n") || "",
+    cookies: LEGAL?.["cookies"]?.body?.join("\n\n") || "",
   },
   socials: {
     instagram: "https://instagram.com",
@@ -83,27 +84,24 @@ export async function GET() {
       SELECT content FROM store_content WHERE id = 'site_content' LIMIT 1;
     `);
 
-    if (result.rows && result.rows.length > 0) {
+    if (result && result.rows && result.rows.length > 0) {
       const data = result.rows[0].content || {};
-      return NextResponse.json(
-        {
-          success: true,
-          content: {
-            about: { ...DEFAULT_CONTENT.about, ...(data.about || {}) },
-            legal: { ...DEFAULT_CONTENT.legal, ...(data.legal || {}) },
-            socials: { ...DEFAULT_CONTENT.socials, ...(data.socials || {}) },
-            faqs: Array.isArray(data.faqs) && data.faqs.length > 0 ? data.faqs : DEFAULT_CONTENT.faqs,
-            homepageMode: data.homepageMode || "editorial",
-            marqueeItems: data.marqueeItems || DEFAULT_CONTENT.marqueeItems,
-            homeContent: { ...(DEFAULT_CONTENT as any).homeContent, ...(data.homeContent || {}) },
-            shopContent: { ...(DEFAULT_CONTENT as any).shopContent, ...(data.shopContent || {}) },
-          },
+      return NextResponse.json({
+        success: true,
+        content: {
+          about: { ...DEFAULT_CONTENT.about, ...(data.about || {}) },
+          legal: { ...DEFAULT_CONTENT.legal, ...(data.legal || {}) },
+          socials: { ...DEFAULT_CONTENT.socials, ...(data.socials || {}) },
+          faqs: Array.isArray(data.faqs) && data.faqs.length > 0 ? data.faqs : DEFAULT_CONTENT.faqs,
+          homepageMode: data.homepageMode || "editorial",
+          marqueeItems: data.marqueeItems || DEFAULT_CONTENT.marqueeItems,
+          homeContent: { ...(DEFAULT_CONTENT as any).homeContent, ...(data.homeContent || {}) },
+          shopContent: { ...(DEFAULT_CONTENT as any).shopContent, ...(data.shopContent || {}) },
         },
-        { headers: { "Cache-Control": "no-store, max-age=0" } }
-      );
+      });
     }
 
-    return NextResponse.json({ success: true, content: DEFAULT_CONTENT }, { headers: { "Cache-Control": "no-store, max-age=0" } });
+    return NextResponse.json({ success: true, content: DEFAULT_CONTENT });
   } catch (error) {
     console.error("Content fetch error:", error);
     return NextResponse.json({ success: true, content: DEFAULT_CONTENT });
@@ -130,10 +128,12 @@ export async function POST(req: NextRequest) {
         updated_at = NOW();
     `);
 
-    revalidatePath("/", "layout");
-    revalidatePath("/about", "page");
-    revalidatePath("/shop", "page");
-    revalidatePath("/contact", "page");
+    try {
+      revalidatePath("/", "layout");
+      revalidatePath("/about");
+      revalidatePath("/shop");
+      revalidatePath("/contact");
+    } catch {}
 
     return NextResponse.json({
       success: true,
