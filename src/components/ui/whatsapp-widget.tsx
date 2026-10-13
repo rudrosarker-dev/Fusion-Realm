@@ -29,7 +29,7 @@ export function WhatsAppWidget() {
         </div>
       )}
 
-      {/* মেইন ফ্লোটিং বাটন */}
+      {/* মেইন ফ্লোটিং বাটন: শ্যাম্পেন গোল্ড বেস কালার এবং হোভারে এমারেল্ড গ্রিন */}
       <a
         href={whatsappUrl}
         target="_blank"
@@ -37,9 +37,9 @@ export function WhatsAppWidget() {
         aria-label="Chat on WhatsApp"
         onMouseEnter={() => setHovered(true)}
         onMouseLeave={() => setHovered(false)}
-        className="group relative flex size-12 sm:size-13 items-center justify-center rounded-full bg-ink text-paper shadow-2xl transition-all duration-300 hover:scale-105 hover:bg-emerald-600 hover:text-white cursor-pointer"
+        className="group relative flex size-12 sm:size-13 items-center justify-center rounded-full bg-[#c5a880] text-[#0e0d0b] shadow-2xl transition-all duration-300 hover:scale-105 hover:bg-emerald-600 hover:text-white cursor-pointer"
       >
-        <span className="absolute -inset-1 rounded-full border border-ink/20 opacity-0 group-hover:opacity-100 transition-opacity animate-ping" />
+        <span className="absolute -inset-1 rounded-full border border-[#c5a880]/50 opacity-0 group-hover:opacity-100 transition-opacity animate-ping" />
         <MessageCircle className="size-5.5 sm:size-6" strokeWidth={1.75} />
       </a>
     </div>
