@@ -33,6 +33,8 @@ import {
   HelpCircle,
   BookOpen,
   MessageCircle,
+  ShieldAlert,
+  ShieldCheck,
 } from "lucide-react";
 import Image from "next/image";
 import { useEffect, useMemo, useRef, useState } from "react";
@@ -332,6 +334,7 @@ export default function AdminPage() {
   const [orders, setOrders] = useState<any[]>([]);
   const [productsList, setProductsList] = useState<Product[]>([]);
   const [couponsList, setCouponsList] = useState<any[]>([]);
+  const [blacklistedPhones, setBlacklistedPhones] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
 
   const [selectedProductIds, setSelectedProductIds] = useState<string[]>([]);
@@ -490,6 +493,18 @@ export default function AdminPage() {
     } catch {}
   };
 
+  const fetchBlacklist = async () => {
+    try {
+      const res = await fetch("/api/admin/blacklist", { cache: "no-store" });
+      if (res.ok) {
+        const data = await res.json();
+        if (data.blacklists) {
+          setBlacklistedPhones(data.blacklists.map((b: any) => b.phone));
+        }
+      }
+    } catch {}
+  };
+
   const fetchAbandonedCarts = async () => {
     try {
       const res = await fetch(`/api/abandoned-cart?t=${Date.now()}`, { cache: "no-store" });
@@ -575,6 +590,7 @@ export default function AdminPage() {
   useEffect(() => {
     fetchProducts();
     fetchOrders();
+    fetchBlacklist();
     fetchAbandonedCarts();
     fetchCoupons();
     fetchAdminSession();
@@ -598,6 +614,26 @@ export default function AdminPage() {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ id, orderStatus: status }),
     });
+  };
+
+  const handleToggleBlacklist = async (phone: string, currentlyBlocked: boolean) => {
+    const action = currentlyBlocked ? "remove" : "add";
+    try {
+      const res = await fetch("/api/admin/blacklist", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ phone, action }),
+      });
+      const data = await res.json();
+      if (res.ok) {
+        push("success", data.message || (currentlyBlocked ? "Unblocked successfully" : "Customer Blacklisted"));
+        await fetchBlacklist();
+      } else {
+        push("error", data.error || "Failed to update blacklist status.");
+      }
+    } catch {
+      push("error", "Error connecting to server.");
+    }
   };
 
   const handleDeleteOrder = async (orderId: string) => {
@@ -1164,6 +1200,7 @@ export default function AdminPage() {
                         <tbody className="divide-y divide-line/60">
                           {orders.map((o) => {
                             const isSelected = selectedOrderIds.includes(o.id);
+                            const isBlacklisted = blacklistedPhones.includes(o.address.phone);
                             return (
                               <tr key={o.id} onClick={() => setViewOrder(o)} className={cn("hover:bg-cream/40 cursor-pointer transition-colors duration-200", isSelected ? "bg-gold/5" : "")}>
                                 <td className="px-5 py-4 w-12" onClick={(e) => e.stopPropagation()}>
@@ -1184,9 +1221,19 @@ export default function AdminPage() {
                                   <p className="text-[11px] text-fog mt-0.5">{o.email}</p>
                                 </td>
                                 <td className="px-5 py-4 text-ash text-xs">
-                                  <span className="font-mono font-medium">{o.address.phone}</span>
-                                  <br />
-                                  {o.address.city}
+                                  <div className="flex items-center gap-1.5 flex-wrap">
+                                    <span className="font-mono font-medium">{o.address.phone}</span>
+                                    {isBlacklisted ? (
+                                      <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-xs bg-red-500/10 text-red-600 border border-red-500/20 text-[9px] font-bold uppercase tracking-wider">
+                                        <ShieldAlert className="size-2.5" /> Blocked
+                                      </span>
+                                    ) : (
+                                      <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-xs bg-emerald-500/10 text-emerald-700 border border-emerald-500/20 text-[9px] font-bold uppercase tracking-wider">
+                                        <ShieldCheck className="size-2.5" /> Safe
+                                      </span>
+                                    )}
+                                  </div>
+                                  <span className="text-[11px] text-fog mt-0.5 block">{o.address.city}</span>
                                 </td>
                                 <td className="px-5 py-4 font-semibold text-ink">
                                   <Price amountBDT={o.dueAmountBDT} />
@@ -1597,7 +1644,6 @@ export default function AdminPage() {
           {tab === "content" && (
             <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="space-y-8 max-w-4xl">
               <form onSubmit={handleSaveContent} className="space-y-8">
-                {/* 8.0 HOMEPAGE EXPERIENCE MODE SWITCHER */}
                 <div className="bg-paper/60 backdrop-blur-md rounded-sm shadow-sm border border-line/60 p-8 space-y-6 relative overflow-hidden">
                   <div className="absolute top-0 left-0 w-1 h-full bg-gold-dark"></div>
                   <div className="border-b border-line pb-5 flex items-center justify-between">
@@ -1666,7 +1712,6 @@ export default function AdminPage() {
                   </div>
                 </div>
 
-                {/* 8.1 HOMEPAGE MARQUEE TEXTS CMS */}
                 <div className="bg-paper/60 backdrop-blur-md rounded-sm shadow-sm border border-line/60 p-8 space-y-5">
                   <div className="border-b border-line pb-4 flex items-center justify-between">
                     <div>
@@ -1686,7 +1731,6 @@ export default function AdminPage() {
                   />
                 </div>
 
-                {/* 8.2 SHOP PAGE TEXTS CMS */}
                 <div className="bg-paper/60 backdrop-blur-md rounded-sm shadow-sm border border-line/60 p-8 space-y-6">
                   <div className="border-b border-line pb-5">
                     <h2 className="text-xs font-bold uppercase tracking-[0.2em] text-ink flex items-center gap-3">
@@ -1751,7 +1795,6 @@ export default function AdminPage() {
                   </div>
                 </div>
 
-                {/* 8.3 HOMEPAGE SECTIONS TEXT CMS */}
                 <div className="bg-paper/60 backdrop-blur-md rounded-sm shadow-sm border border-line/60 p-8 space-y-8">
                   <div className="border-b border-line pb-5">
                     <h2 className="text-xs font-bold uppercase tracking-[0.2em] text-ink flex items-center gap-3">
@@ -1826,7 +1869,6 @@ export default function AdminPage() {
                   </div>
                 </div>
 
-                {/* 8.4 Social Media Links */}
                 <div className="bg-paper/60 backdrop-blur-md rounded-sm shadow-sm border border-line/60 p-8 space-y-6">
                   <div className="border-b border-line pb-5">
                     <h2 className="text-xs font-bold uppercase tracking-[0.2em] text-ink flex items-center gap-3">
@@ -1854,7 +1896,6 @@ export default function AdminPage() {
                   </div>
                 </div>
 
-                {/* 8.5 FAQ */}
                 <div className="bg-paper/60 backdrop-blur-md rounded-sm shadow-sm border border-line/60 p-8 space-y-6">
                   <div className="border-b border-line pb-5 flex flex-wrap items-center justify-between gap-4">
                     <h2 className="text-xs font-bold uppercase tracking-[0.2em] text-ink flex items-center gap-3">
@@ -1927,7 +1968,6 @@ export default function AdminPage() {
                   </div>
                 </div>
 
-                {/* 8.6 About Page Texts */}
                 <div className="bg-paper/60 backdrop-blur-md rounded-sm shadow-sm border border-line/60 p-8 space-y-6">
                   <div className="border-b border-line pb-5">
                     <h2 className="text-xs font-bold uppercase tracking-[0.2em] text-ink flex items-center gap-3">
@@ -2011,7 +2051,6 @@ export default function AdminPage() {
                   </div>
                 </div>
 
-                {/* 8.7 Store Policies */}
                 <div className="bg-paper/60 backdrop-blur-md rounded-sm shadow-sm border border-line/60 p-8 space-y-6">
                   <div className="border-b border-line pb-5">
                     <h2 className="text-xs font-bold uppercase tracking-[0.2em] text-ink flex items-center gap-3">
@@ -2056,7 +2095,6 @@ export default function AdminPage() {
                 </div>
               </form>
 
-              {/* 8.8 JOURNAL STORIES PUBLISHER */}
               <div className="bg-paper/60 backdrop-blur-md rounded-sm shadow-sm border border-line/60 p-8 space-y-6">
                 <div className="border-b border-line pb-5 flex flex-wrap items-center justify-between gap-4">
                   <h2 className="text-xs font-bold uppercase tracking-[0.2em] text-ink flex items-center gap-3">
@@ -2141,7 +2179,6 @@ export default function AdminPage() {
           {/* 9. SETTINGS TAB */}
           {tab === "settings" && (
             <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="space-y-8 max-w-3xl">
-              {/* Profile Credentials */}
               <div className="bg-paper/60 backdrop-blur-md rounded-sm shadow-sm border border-line/60 p-8 space-y-6">
                 <div className="border-b border-line pb-5 flex items-center justify-between">
                   <h2 className="text-xs font-bold uppercase tracking-[0.2em] text-ink flex items-center gap-3">
@@ -2186,7 +2223,6 @@ export default function AdminPage() {
                 </form>
               </div>
 
-              {/* Staff Delegation */}
               <div className="bg-paper/60 backdrop-blur-md rounded-sm shadow-sm border border-line/60 p-8 space-y-6">
                 <div className="border-b border-line pb-5 flex flex-wrap items-center justify-between gap-4">
                   <div>
@@ -2333,7 +2369,6 @@ export default function AdminPage() {
                 </div>
               </div>
 
-              {/* Maintenance & Archive Reset */}
               <div className="bg-error/5 rounded-sm shadow-sm border border-error/20 p-8 space-y-6">
                 <div className="border-b border-error/20 pb-5">
                   <h2 className="text-xs font-bold uppercase tracking-[0.2em] text-error flex items-center gap-3">
@@ -2396,7 +2431,6 @@ export default function AdminPage() {
         </div>
       </div>
 
-      {/* JOURNAL STORY ADD/EDIT MODAL */}
       <Modal
         open={articleModalOpen}
         onClose={() => setArticleModalOpen(false)}
@@ -2456,7 +2490,6 @@ export default function AdminPage() {
         </form>
       </Modal>
 
-      {/* OFFLINE ORDER MODAL */}
       <OfflineOrderModal
         open={offlineOrderOpen}
         onClose={() => setOfflineOrderOpen(false)}
@@ -2474,6 +2507,8 @@ export default function AdminPage() {
           onClose={() => setViewOrder(null)}
           onStatusChange={setOrderStatus}
           onOrderUpdated={fetchOrders}
+          isBlacklisted={blacklistedPhones.includes(viewOrder.address.phone)}
+          onToggleBlacklist={handleToggleBlacklist}
         />
       )}
       <ProductEditModal product={editProduct} onClose={() => setEditProduct(null)} onSave={saveEdit} />
@@ -3089,15 +3124,42 @@ function CourierPackingSlipModal({
   onClose,
   onStatusChange,
   onOrderUpdated,
+  isBlacklisted,
+  onToggleBlacklist,
 }: {
   order: any;
   onClose: () => void;
   onStatusChange: (id: string, s: OrderStatus) => void;
   onOrderUpdated: () => void;
+  isBlacklisted: boolean;
+  onToggleBlacklist: (phone: string, currentlyBlocked: boolean) => Promise<void>;
 }) {
   const { push } = useToast();
   const [booking, setBooking] = useState(false);
   const [localTracking, setLocalTracking] = useState(order.trackingCode || "");
+  const [fraudData, setFraudData] = useState<any>(null);
+  const [blacklisting, setBlacklisting] = useState(false);
+
+  useEffect(() => {
+    if (order.address?.phone) {
+      fetch(`/api/admin/fraud-check?phone=${encodeURIComponent(order.address.phone)}`, { cache: "no-store" })
+        .then((res) => res.json())
+        .then((d) => setFraudData(d))
+        .catch(() => {});
+    }
+  }, [order.address?.phone]);
+
+  const handleBlacklistClick = async () => {
+    if (!order.address?.phone) return;
+    setBlacklisting(true);
+    await onToggleBlacklist(order.address.phone, isBlacklisted);
+    setBlacklisting(false);
+    // রিফ্রেশ করা
+    fetch(`/api/admin/fraud-check?phone=${encodeURIComponent(order.address.phone)}`, { cache: "no-store" })
+      .then((res) => res.json())
+      .then((d) => setFraudData(d))
+      .catch(() => {});
+  };
 
   const handleBookCourier = async () => {
     setBooking(true);
@@ -3126,6 +3188,69 @@ function CourierPackingSlipModal({
   return (
     <Modal open={true} onClose={onClose} title={`Order Slip — ${order.id}`} wide>
       <div className="space-y-6">
+        
+        {/* কাস্টমার ফ্রড স্কোর ও ব্ল্যাকলিস্ট কার্ড */}
+        <div
+          className={cn(
+            "rounded-sm border p-5 flex flex-wrap items-center justify-between gap-4 shadow-2xs transition-all",
+            isBlacklisted || fraudData?.risk === "CRITICAL"
+              ? "bg-red-500/10 border-red-500/30 text-red-950"
+              : fraudData?.risk === "HIGH"
+              ? "bg-amber-500/10 border-amber-500/30 text-amber-950"
+              : "bg-emerald-500/10 border-emerald-500/25 text-emerald-950"
+          )}
+        >
+          <div className="flex items-center gap-3.5">
+            {isBlacklisted || fraudData?.risk === "CRITICAL" ? (
+              <ShieldAlert className="size-6 text-red-600 shrink-0" />
+            ) : (
+              <ShieldCheck className="size-6 text-emerald-600 shrink-0" />
+            )}
+            <div>
+              <div className="flex items-center gap-2">
+                <p className="text-[10px] font-bold uppercase tracking-[0.2em] font-mono">
+                  Customer Fraud & Trust Analysis
+                </p>
+                {fraudData && (
+                  <span
+                    className={cn(
+                      "text-[9px] font-bold px-2 py-0.5 rounded-xs uppercase tracking-wider",
+                      isBlacklisted ? "bg-red-600 text-white" : "bg-emerald-700 text-white"
+                    )}
+                  >
+                    Score: {fraudData.score}% ({fraudData.risk})
+                  </span>
+                )}
+              </div>
+              <p className="text-xs font-semibold mt-1">
+                {fraudData?.recommendation || (isBlacklisted ? "Blacklisted customer" : "Analyzing history...")}
+              </p>
+              {fraudData && fraudData.totalOrders > 0 && (
+                <p className="text-[11px] text-fog font-mono mt-0.5">
+                  Store History: {fraudData.completedOrders} of {fraudData.totalOrders} accepted ({fraudData.cancelledOrders} returns)
+                </p>
+              )}
+            </div>
+          </div>
+
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={handleBlacklistClick}
+              disabled={blacklisting}
+              className={cn(
+                "px-4 py-2 text-[10px] font-bold uppercase tracking-wider rounded-xs transition-colors cursor-pointer shadow-2xs",
+                isBlacklisted
+                  ? "bg-paper text-ink border border-line hover:bg-emerald-50 hover:text-emerald-700"
+                  : "bg-red-600 text-white hover:bg-red-700"
+              )}
+            >
+              {blacklisting ? "Updating..." : isBlacklisted ? "✓ Unblock / Whitelist" : "🚫 Blacklist Customer"}
+            </button>
+          </div>
+        </div>
+
+        {/* কুরিয়ার বুকিং সেকশন */}
         {localTracking ? (
           <div className="bg-emerald-500/10 rounded-sm border border-emerald-500/20 p-5 flex flex-wrap items-center justify-between gap-4 shadow-2xs">
             <div className="flex items-center gap-4">
@@ -3147,7 +3272,7 @@ function CourierPackingSlipModal({
           <div className="bg-paper rounded-sm shadow-2xs border border-line/80 p-5 flex flex-wrap items-center justify-between gap-4">
             <div>
               <p className="text-sm font-bold text-ink">Steadfast Courier 1-Click Booking</p>
-              <p className="text-xs text-ash mt-1">Booking with Steadfast will automatically generate tracking code.</p>
+              <p className="text-xs text-ash mt-1">Booking with Steadfast will automatically generate tracking code & SMS customer.</p>
             </div>
             <Button onClick={handleBookCourier} loading={booking} className="gap-2 shadow-md">
               <Truck className="size-4" strokeWidth={2} />

@@ -1,6 +1,7 @@
+// START OF FILE src/app/checkout/page.tsx
 "use client";
 
-import { ArrowLeft, Check, ChevronDown, Lock, ShoppingBag, Truck, CreditCard, ShieldCheck } from "lucide-react";
+import { ArrowLeft, Check, ChevronDown, Lock, ShoppingBag, Truck, ShieldAlert } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -46,7 +47,6 @@ const BD_DIVISIONS_DATA: Record<string, string[]> = {
 };
 
 const DIVISIONS = Object.keys(BD_DIVISIONS_DATA);
-
 const STEPS = ["Contact", "Shipping", "Payment", "Review"];
 
 interface Form {
@@ -92,6 +92,7 @@ export default function CheckoutPage() {
   const [placing, setPlacing] = useState(false);
   const [order, setOrder] = useState<any>(null);
   const [mounted, setMounted] = useState(false);
+  const [isBlacklisted, setIsBlacklisted] = useState(false);
 
   useEffect(() => {
     setMounted(true);
@@ -114,6 +115,24 @@ export default function CheckoutPage() {
       });
     }
   }, [items, subtotalBDT]);
+
+  // ফোন নম্বর পরিবর্তনের সাথে সাথে ব্ল্যাকলিস্ট চেক
+  useEffect(() => {
+    const cleanPhone = form.phone.trim();
+    if (cleanPhone.length >= 11) {
+      fetch(`/api/admin/blacklist?phone=${encodeURIComponent(cleanPhone)}`)
+        .then((res) => res.json())
+        .then((data) => {
+          if (data.isBlacklisted) {
+            setIsBlacklisted(true);
+            setForm((f) => ({ ...f, paymentMethod: "full-payment" }));
+          } else {
+            setIsBlacklisted(false);
+          }
+        })
+        .catch(() => {});
+    }
+  }, [form.phone]);
 
   const isInsideDhakaCity = form.division === "Dhaka" && form.city === "Dhaka";
 
@@ -295,7 +314,7 @@ export default function CheckoutPage() {
     return <div className="container-x pb-24 pt-40" aria-busy="true" aria-label="Loading checkout" />;
   }
 
-  // STEP 4: ORDER CONFIRMED SCREEN (ADMIN CARD STYLE)
+  // STEP 4: ORDER CONFIRMED SCREEN
   if (step === 4 && order) {
     return (
       <div className="container-x max-w-2xl pb-24 pt-32 text-center lg:pt-36">
@@ -359,7 +378,6 @@ export default function CheckoutPage() {
 
   const availableDistricts = BD_DIVISIONS_DATA[form.division] || [];
 
-  // ডানপাশের অর্ডার সামারি (প্রফেশনাল এডমিন কার্ড স্টাইল)
   const summary = (
     <div className="bg-paper p-6 sm:p-7 border border-line shadow-xs space-y-5">
       <div className="flex items-center justify-between border-b border-line pb-3">
@@ -383,7 +401,6 @@ export default function CheckoutPage() {
         ))}
       </ul>
 
-      {/* কুপন কোড বক্স */}
       <div className="border-t border-line pt-4">
         {couponCode && discountBDT > 0 ? (
           <div className="flex items-center justify-between bg-emerald-500/10 border border-emerald-500/20 px-3.5 py-2.5 text-xs text-emerald-800">
@@ -416,7 +433,6 @@ export default function CheckoutPage() {
         )}
       </div>
 
-      {/* প্রাইস ক্যালকুলেশন */}
       <dl className="border-t border-line pt-4 space-y-2.5 text-xs">
         <div className="flex justify-between text-ash">
           <dt>Garments Subtotal</dt>
@@ -465,7 +481,6 @@ export default function CheckoutPage() {
         </span>
       </div>
 
-      {/* স্টেপ প্রগ্রেস বার */}
       <ol className="mt-8 flex items-center justify-between border border-line bg-paper p-3" aria-label="Checkout progress">
         {STEPS.map((label, i) => (
           <li key={label} className={cn("flex items-center", i < STEPS.length - 1 && "flex-1")}>
@@ -514,6 +529,15 @@ export default function CheckoutPage() {
                 <p className="text-xs text-fog mt-0.5">We will send your order confirmation and dispatch receipt here.</p>
               </div>
 
+              {isBlacklisted && (
+                <div className="flex items-center gap-3 border border-red-500/30 bg-red-500/10 p-4 text-xs text-red-900 rounded-xs">
+                  <ShieldAlert className="size-5 shrink-0 text-red-600" />
+                  <p>
+                    <strong>নোটিশ:</strong> আপনার নম্বরে পূর্বে পার্সেল ডেলিভারি ব্যর্থ হওয়ায় ক্যাশ অন ডেলিভারি প্রযোজ্য নয়। অনুগ্রহ করে <strong>Full Payment</strong> সম্পন্ন করুন।
+                  </p>
+                </div>
+              )}
+
               <Input label="Email Address *" type="email" required value={form.email} onChange={(e) => set("email", e.target.value)} error={errors.email} placeholder="you@example.com" autoComplete="email" />
               
               <div className="grid gap-5 sm:grid-cols-2">
@@ -529,7 +553,7 @@ export default function CheckoutPage() {
             </section>
           )}
 
-          {/* STEP 2: SHIPPING (প্রফেশনাল এডমিন স্টাইল কার্ড) */}
+          {/* STEP 2: SHIPPING */}
           {step === 1 && (
             <section aria-label="Shipping address" className="border border-line bg-paper p-6 sm:p-8 shadow-xs space-y-5 animate-in fade-in">
               <div className="border-b border-line pb-3">
@@ -548,7 +572,6 @@ export default function CheckoutPage() {
               />
               
               <div className="grid gap-5 sm:grid-cols-2">
-                {/* ১. আগে বিভাগ */}
                 <Select
                   label="Division *"
                   value={form.division}
@@ -556,7 +579,6 @@ export default function CheckoutPage() {
                   options={DIVISIONS.map((d) => ({ value: d, label: `${d} Division` }))}
                 />
 
-                {/* ২. পরে সংশ্লিষ্ট জেলা */}
                 <Select
                   label="City / District *"
                   value={form.city}
@@ -571,7 +593,6 @@ export default function CheckoutPage() {
                 <Select label="Country" value={form.country} disabled options={[{ value: "Bangladesh", label: "Bangladesh" }]} />
               </div>
 
-              {/* ডেলিভারি রেট কার্ড */}
               <div className="border border-line bg-cream/40 p-4.5 space-y-1">
                 <div className="flex items-center justify-between text-xs font-semibold text-ink">
                   <span className="flex items-center gap-2">
@@ -595,7 +616,7 @@ export default function CheckoutPage() {
             </section>
           )}
 
-          {/* STEP 3: PAYMENT (এডমিন প্যানেলের মতো স্ট্রাকচার্ড বক্স) */}
+          {/* STEP 3: PAYMENT */}
           {step === 2 && (
             <section aria-label="Payment method" className="border border-line bg-paper p-6 sm:p-8 shadow-xs space-y-6 animate-in fade-in">
               <div className="border-b border-line pb-3">
@@ -603,39 +624,42 @@ export default function CheckoutPage() {
                 <p className="text-xs text-fog mt-0.5">Select your preferred payment method below.</p>
               </div>
 
-              {/* পেমেন্ট মেথড বাটনসমূহ */}
               <div className="grid gap-3 sm:grid-cols-2">
-                <button
-                  type="button"
-                  onClick={() => set("paymentMethod", "cod")}
-                  className={cn(
-                    "border p-4.5 text-left transition-all cursor-pointer relative",
-                    form.paymentMethod === "cod" ? "border-ink bg-cream/40 shadow-2xs" : "border-line hover:border-ink/60"
-                  )}
-                >
-                  <div className="flex items-center justify-between">
-                    <p className="text-xs font-bold uppercase tracking-wider text-ink">Cash on Delivery</p>
-                    <div className={cn("size-3.5 rounded-full border flex items-center justify-center", form.paymentMethod === "cod" ? "border-ink bg-ink" : "border-line")}>
-                      {form.paymentMethod === "cod" && <div className="size-1 rounded-full bg-paper" />}
+                {/* ক্যাশ অন ডেলিভারি: ব্ল্যাকলিস্ট হলে বন্ধ থাকবে */}
+                {!isBlacklisted && (
+                  <button
+                    type="button"
+                    onClick={() => set("paymentMethod", "cod")}
+                    className={cn(
+                      "border p-4.5 text-left transition-all cursor-pointer relative",
+                      form.paymentMethod === "cod" ? "border-ink bg-cream/40 shadow-2xs" : "border-line hover:border-ink/60"
+                    )}
+                  >
+                    <div className="flex items-center justify-between">
+                      <p className="text-xs font-bold uppercase tracking-wider text-ink">Cash on Delivery</p>
+                      <div className={cn("size-3.5 rounded-full border flex items-center justify-center", form.paymentMethod === "cod" ? "border-ink bg-ink" : "border-line")}>
+                        {form.paymentMethod === "cod" && <div className="size-1 rounded-full bg-paper" />}
+                      </div>
                     </div>
-                  </div>
-                  <p className="text-[11px] text-fog mt-1.5 leading-relaxed">
-                    Pay product price to courier after parcel check. (Delivery fee paid in advance).
-                  </p>
-                </button>
+                    <p className="text-[11px] text-fog mt-1.5 leading-relaxed">
+                      Pay product price to courier after parcel check. (Delivery fee paid in advance).
+                    </p>
+                  </button>
+                )}
 
                 <button
                   type="button"
                   onClick={() => set("paymentMethod", "full-payment")}
                   className={cn(
                     "border p-4.5 text-left transition-all cursor-pointer relative",
-                    form.paymentMethod === "full-payment" ? "border-ink bg-cream/40 shadow-2xs" : "border-line hover:border-ink/60"
+                    form.paymentMethod === "full-payment" || isBlacklisted ? "border-ink bg-cream/40 shadow-2xs" : "border-line hover:border-ink/60",
+                    isBlacklisted && "sm:col-span-2"
                   )}
                 >
                   <div className="flex items-center justify-between">
                     <p className="text-xs font-bold uppercase tracking-wider text-ink">Full Payment (bKash/Nagad)</p>
-                    <div className={cn("size-3.5 rounded-full border flex items-center justify-center", form.paymentMethod === "full-payment" ? "border-ink bg-ink" : "border-line")}>
-                      {form.paymentMethod === "full-payment" && <div className="size-1 rounded-full bg-paper" />}
+                    <div className={cn("size-3.5 rounded-full border flex items-center justify-center", form.paymentMethod === "full-payment" || isBlacklisted ? "border-ink bg-ink" : "border-line")}>
+                      <div className="size-1 rounded-full bg-paper" />
                     </div>
                   </div>
                   <p className="text-[11px] text-fog mt-1.5 leading-relaxed">
@@ -644,7 +668,7 @@ export default function CheckoutPage() {
                 </button>
               </div>
 
-              {/* পেমেন্ট ইন্সট্রাকশন বক্স (এডমিন স্টাইল) */}
+              {/* পেমেন্ট ইন্সট্রাকশন বক্স */}
               <div className="border border-line bg-cream/50 p-5 sm:p-6 space-y-4">
                 <div className="flex flex-wrap items-center justify-between border-b border-line pb-3 gap-2">
                   <div>
@@ -697,7 +721,7 @@ export default function CheckoutPage() {
             </section>
           )}
 
-          {/* STEP 4: REVIEW (এডমিন স্লিপের মতো কার্ড) */}
+          {/* STEP 4: REVIEW */}
           {step === 3 && (
             <section aria-label="Review order" className="border border-line bg-paper p-6 sm:p-8 shadow-xs space-y-6 animate-in fade-in">
               <div className="border-b border-line pb-3">
@@ -756,7 +780,6 @@ export default function CheckoutPage() {
 
         </div>
 
-        {/* ডেস্কটপ সাইডবার সামারি */}
         <aside className="hidden h-fit lg:sticky lg:top-28 lg:block" aria-label="Order summary">
           {summary}
         </aside>
@@ -764,3 +787,4 @@ export default function CheckoutPage() {
     </div>
   );
 }
+// END OF FILE src/app/checkout/page.tsx
