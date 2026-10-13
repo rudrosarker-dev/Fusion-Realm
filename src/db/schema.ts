@@ -1,3 +1,4 @@
+// START OF FILE src/db/schema.ts
 import { pgTable, text, integer, boolean, timestamp, jsonb } from "drizzle-orm/pg-core";
 
 // ——— 1. SITE SETTINGS TABLE ———
@@ -77,6 +78,10 @@ export const orders = pgTable("orders", {
     district: string;
     address: string;
     notes?: string;
+    courier?: string;
+    trackingCode?: string;
+    consignmentId?: string;
+    dispatchedAt?: string;
   }>().notNull(),
   items: jsonb("items").$type<{
     productId: string;
@@ -110,3 +115,13 @@ export const coupons = pgTable("coupons", {
   expiresAt: timestamp("expires_at"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
+
+// ——— 6. BLACKLISTS TABLE (ফ্রড ও সন্দেহজনক নম্বর ম্যানেজমেন্ট) ———
+export const blacklists = pgTable("blacklists", {
+  id: text("id").primaryKey(),
+  phone: text("phone").notNull().unique(),
+  reason: text("reason").default("Repeated delivery refusal or fake order"),
+  blacklistedBy: text("blacklisted_by").default("ADMIN"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+// END OF FILE src/db/schema.ts
