@@ -1,3 +1,4 @@
+// START OF FILE src/components/home/sections.tsx
 "use client";
 
 import { ArrowDown, ArrowRight, Star, Sparkles } from "lucide-react";
@@ -370,27 +371,36 @@ export function ProductHighlight({ product }: { product?: Product | null }) {
   );
 }
 
-/* ————————————————— SECTION 8 — NEWSLETTER ————————————————— */
+/* ————————————————— SECTION 8 — NEWSLETTER (ওভারফ্লো ফিক্সড) ————————————————— */
 export function NewsletterSection({ content }: { content?: any }) {
   const eyebrow = content?.newsletterEyebrow !== undefined ? content.newsletterEyebrow : "";
   const heading = content?.newsletterHeading !== undefined ? content.newsletterHeading : "";
   const body = content?.newsletterBody !== undefined ? content.newsletterBody : "";
 
   return (
-    <section className="container-x py-24 lg:py-36" aria-label="Newsletter">
-      <Reveal className="mx-auto max-w-3xl border border-line bg-paper p-8 sm:p-16 text-center rounded-md shadow-sm">
+    <section className="container-x py-16 sm:py-24 lg:py-36" aria-label="Newsletter">
+      <Reveal className="mx-auto max-w-3xl border border-line bg-paper p-5 sm:p-12 lg:p-16 text-center rounded-md shadow-sm overflow-hidden">
         {eyebrow && eyebrow.trim() !== "" && (
-          <div className="inline-flex items-center gap-2 border border-gold/40 bg-gold/10 px-4 py-1.5 text-[10px] font-mono uppercase tracking-[0.25em] text-[#9e7f55] mb-5 rounded-md">
+          <div className="inline-flex items-center gap-2 border border-gold/40 bg-gold/10 px-3.5 py-1 text-[10px] font-mono uppercase tracking-[0.25em] text-[#9e7f55] mb-4 sm:mb-5 rounded-md">
             <Sparkles className="size-3" />
             <span className="font-semibold">{eyebrow}</span>
           </div>
         )}
-        {heading && heading.trim() !== "" && <h2 className="mt-2 font-display text-4xl sm:text-5xl font-light text-ink tracking-tight">{heading}</h2>}
-        {body && body.trim() !== "" && <p className="mt-5 text-[14px] leading-[1.8] text-ash max-w-md mx-auto font-light whitespace-pre-line">{body}</p>}
-        <div className="mt-10 w-full max-w-md mx-auto">
+        {heading && heading.trim() !== "" && (
+          <h2 className="mt-2 font-display text-3xl sm:text-5xl font-light text-ink tracking-tight">
+            {heading}
+          </h2>
+        )}
+        {body && body.trim() !== "" && (
+          <p className="mt-3 sm:mt-5 text-[13px] sm:text-[14px] leading-[1.8] text-ash max-w-md mx-auto font-light whitespace-pre-line">
+            {body}
+          </p>
+        )}
+        <div className="mt-8 sm:mt-10 w-full max-w-md mx-auto px-1 sm:px-0">
           <NewsletterForm />
         </div>
       </Reveal>
     </section>
   );
 }
+// END OF FILE src/components/home/sections.tsx
