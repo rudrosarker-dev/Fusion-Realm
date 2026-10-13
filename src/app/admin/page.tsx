@@ -42,6 +42,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Modal } from "@/components/ui/overlays";
 import { Button, EmptyState, Input, Price, Select } from "@/components/ui/primitives";
+import { AtelierGuidebookModal } from "@/components/admin/atelier-guidebook";
 import { useToast } from "@/lib/store";
 import { cn, formatPrice, isLowStock, isSoldOut, totalStock } from "@/lib/utils";
 import { BRAND_CONFIG } from "@/lib/brand.config";
@@ -332,6 +333,7 @@ function SalesAnalyticsChart({ orders }: { orders: any[] }) {
 export default function AdminPage() {
   const { push } = useToast();
   const [tab, setTab] = useState<Tab>("dashboard");
+  const [guidebookOpen, setGuidebookOpen] = useState(false);
   const [orders, setOrders] = useState<any[]>([]);
   const [productsList, setProductsList] = useState<Product[]>([]);
   const [couponsList, setCouponsList] = useState<any[]>([]);
@@ -1027,9 +1029,22 @@ export default function AdminPage() {
             marquee text, shop texts & socials, customize banners, and control inventory.
           </p>
         </div>
-        <div className="flex items-center gap-2 bg-emerald-500/10 px-3.5 py-1.5 rounded-full border border-emerald-500/20 shadow-xs backdrop-blur-md">
-          <Database className="size-3.5 text-emerald-600 animate-pulse" />
-          <span className="text-[10px] sm:text-[11px] font-bold uppercase tracking-[0.15em] text-emerald-700">Live Production DB</span>
+        
+        {/* Top Actions: Guidebook & Live DB Status */}
+        <div className="flex items-center gap-3 flex-wrap">
+          <button
+            type="button"
+            onClick={() => setGuidebookOpen(true)}
+            className="inline-flex items-center gap-2 px-4 py-2 rounded-xs bg-gold/15 text-gold-dark border border-gold/40 hover:bg-gold/25 text-[10px] sm:text-[11px] font-bold uppercase tracking-[0.15em] transition-all shadow-xs cursor-pointer active:scale-95"
+          >
+            <BookOpen className="size-3.5" />
+            <span>📖 Atelier Master Manual</span>
+          </button>
+          
+          <div className="flex items-center gap-2 bg-emerald-500/10 px-3.5 py-1.5 rounded-full border border-emerald-500/20 shadow-xs backdrop-blur-md">
+            <Database className="size-3.5 text-emerald-600 animate-pulse" />
+            <span className="text-[10px] sm:text-[11px] font-bold uppercase tracking-[0.15em] text-emerald-700">Live Production DB</span>
+          </div>
         </div>
       </div>
 
@@ -1080,7 +1095,7 @@ export default function AdminPage() {
       </div>
 
       <div className="grid gap-12 lg:grid-cols-[250px_1fr]">
-        {/* ——— DESKTOP SIDEBAR NAVIGATION (পিসিতে আগের মতোই হুবহু অক্ষত) ——— */}
+        {/* ——— DESKTOP SIDEBAR NAVIGATION ——— */}
         <nav className="hidden lg:flex flex-col gap-2" aria-label="Admin sections">
           {nav.map((n) => {
             const active = tab === n.id;
@@ -1621,7 +1636,6 @@ export default function AdminPage() {
               )}
             </motion.div>
           )}
-
           {/* 5. CUSTOMERS TAB */}
           {tab === "customers" && (
             <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="space-y-6">
@@ -2561,6 +2575,9 @@ export default function AdminPage() {
       <ProductEditModal product={editProduct} onClose={() => setEditProduct(null)} onSave={saveEdit} />
       <AddProductModal open={addOpen} onClose={() => setAddOpen(false)} onAdd={handleAddProduct} />
       <AddCouponModal open={addCouponOpen} onClose={() => setAddCouponOpen(false)} onAdd={handleCreateCoupon} />
+
+      {/* 3D Atelier Master Interactive Manual Modal */}
+      <AtelierGuidebookModal open={guidebookOpen} onClose={() => setGuidebookOpen(false)} />
     </div>
   );
 }
@@ -2709,10 +2726,10 @@ function OfflineOrderModal({
             <h3 className="text-[11px] font-bold uppercase tracking-[0.2em] text-ink border-b border-line pb-2.5">
               Customer Details
             </h3>
-            <Input label="Name *" required value={cName} onChange={(e) => setCName(e.target.value)} placeholder="e.g. Tanvir Ahmed" />
+            <Input label="Name *" required value={cName} onChange={(e) => setsetCName ? setCName(e.target.value) : undefined} placeholder="e.g. Tanvir Ahmed" />
             <Input label="Phone *" required value={cPhone} onChange={(e) => setCPhone(e.target.value)} placeholder="017XXXXXXXX" />
             <div className="grid grid-cols-2 gap-4">
-              <Input label="Address *" required value={setCAddress ? cAddress : ""} onChange={(e) => setCAddress(e.target.value)} placeholder="House, Road, Area" />
+              <Input label="Address *" required value={cAddress} onChange={(e) => setCAddress(e.target.value)} placeholder="House, Road, Area" />
               <Select
                 label="City *"
                 value={cCity}
