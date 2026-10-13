@@ -1,7 +1,7 @@
 // START OF FILE src/components/layout/footer.tsx
 "use client";
 
-import { ArrowRight, Check } from "lucide-react";
+import { ArrowRight, Check, ChevronDown } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
@@ -86,8 +86,78 @@ export function NewsletterForm({ inverse }: { inverse?: boolean }) {
   );
 }
 
+// মোবাইলের জন্য মার্জিত লাক্সারি অ্যাকর্ডিয়ন আইটেম
+function MobileAccordionItem({
+  heading,
+  links,
+  isOpen,
+  onToggle,
+}: {
+  heading: string;
+  links: { label: string; href: string; isExternal: boolean }[];
+  isOpen: boolean;
+  onToggle: () => void;
+}) {
+  return (
+    <div className="border-b border-white/10 first:border-t border-white/10">
+      <button
+        type="button"
+        onClick={onToggle}
+        aria-expanded={isOpen}
+        className="flex w-full items-center justify-between py-4 text-left cursor-pointer transition-colors"
+      >
+        <span className="inline-flex items-center gap-2 text-[11px] font-semibold uppercase tracking-[0.24em] text-[#dfcaa8] font-mono">
+          <span className="size-1 rounded-full bg-[#c5a880]" aria-hidden />
+          {heading}
+        </span>
+        <ChevronDown
+          className={cn(
+            "size-3.5 text-[#c5a880] transition-transform duration-300 ease-out",
+            isOpen && "rotate-180 text-paper"
+          )}
+          strokeWidth={1.5}
+        />
+      </button>
+
+      <div
+        className={cn(
+          "grid transition-all duration-300 ease-[cubic-bezier(0.22,1,0.36,1)]",
+          isOpen ? "grid-rows-[1fr] pb-4" : "grid-rows-[0fr]"
+        )}
+      >
+        <div className="overflow-hidden">
+          <ul className="flex flex-col gap-2.5 pl-3">
+            {links.map((l) => (
+              <li key={l.label}>
+                {l.isExternal ? (
+                  <a
+                    href={l.href}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center text-[11px] uppercase tracking-[0.16em] text-paper/70 hover:text-[#dfcaa8] transition-colors py-1"
+                  >
+                    <span>{l.label}</span>
+                  </a>
+                ) : (
+                  <Link
+                    href={l.href}
+                    className="inline-flex items-center text-[11px] uppercase tracking-[0.16em] text-paper/70 hover:text-[#dfcaa8] transition-colors py-1"
+                  >
+                    <span>{l.label}</span>
+                  </Link>
+                )}
+              </li>
+            ))}
+          </ul>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export function Footer() {
   const pathname = usePathname();
+  const [openSection, setOpenSection] = useState<string | null>(null);
 
   const [socials, setSocials] = useState({
     instagram: BRAND_CONFIG.socials.instagram,
@@ -166,8 +236,8 @@ export function Footer() {
           </p>
         </div>
 
-        {/* Link columns */}
-        <div className="grid grid-cols-2 gap-10 sm:grid-cols-4 max-w-4xl mx-auto">
+        {/* 1. Desktop Columns (sm স্ক্রিন এবং বড় স্ক্রিনের জন্য - আগের মতোই সম্পূর্ণ অপরিবর্তিত) */}
+        <div className="hidden sm:grid sm:grid-cols-4 gap-10 max-w-4xl mx-auto">
           {COLUMNS.map((col) => (
             <div key={col.heading}>
               <p className="mb-4 inline-flex items-center gap-2 text-[10px] font-semibold uppercase tracking-[0.26em] text-[#dfcaa8] font-mono">
@@ -207,9 +277,24 @@ export function Footer() {
           ))}
         </div>
 
+        {/* 2. Mobile Clean Accordion (শুধুমাত্র মোবাইলে দৃশ্যমান - নো জটলা, সুপার ক্লিন) */}
+        <div className="sm:hidden max-w-md mx-auto">
+          {COLUMNS.map((col) => (
+            <MobileAccordionItem
+              key={col.heading}
+              heading={col.heading}
+              links={col.links}
+              isOpen={openSection === col.heading}
+              onToggle={() =>
+                setOpenSection((prev) => (prev === col.heading ? null : col.heading))
+              }
+            />
+          ))}
+        </div>
+
         {/* Bottom bar */}
         <div className="mt-16 pt-8 border-t border-paper/10 flex flex-col sm:flex-row items-center justify-between gap-4">
-          <p className="text-[10px] uppercase tracking-[0.22em] text-paper/40 font-mono">
+          <p className="text-[10px] uppercase tracking-[0.22em] text-paper/40 font-mono text-center sm:text-left">
             © {new Date().getFullYear()} {BRAND_CONFIG.brandName}. Handcrafted in Dhaka Atelier.
           </p>
           <div className="flex items-center gap-5">
