@@ -22,7 +22,6 @@ const FacebookIcon = ({ className }: { className?: string }) => (
   </svg>
 );
 
-// হোমপেজের জন্য প্রয়োজনীয় এক্সপোর্ট
 export function NewsletterForm({ inverse }: { inverse?: boolean }) {
   const [state, setState] = useState<"idle" | "error" | "done">("idle");
   const [email, setEmail] = useState("");
@@ -65,16 +64,16 @@ export function NewsletterForm({ inverse }: { inverse?: boolean }) {
             setEmail(e.target.value);
             setState("idle");
           }}
-          placeholder="Enter your email address..."
-          className={cn("h-12 flex-1 bg-transparent text-sm outline-none placeholder:text-current placeholder:opacity-40 transition-colors", inverse && "text-paper")}
+          placeholder="Enter email address..."
+          className={cn("h-11 sm:h-12 flex-1 min-w-0 bg-transparent text-sm outline-none placeholder:text-current placeholder:opacity-40 transition-colors", inverse && "text-paper")}
         />
         <button
           type="submit"
           aria-label="Subscribe"
-          className={cn("group flex items-center gap-2 pl-4 pr-1 text-[11px] font-semibold uppercase tracking-[0.2em] transition-all duration-300 cursor-pointer", inverse ? "text-gold-light hover:text-paper" : "text-ink hover:text-gold-dark")}
+          className={cn("group shrink-0 flex items-center gap-1.5 pl-3 pr-1 text-[11px] font-semibold uppercase tracking-[0.18em] transition-all duration-300 cursor-pointer", inverse ? "text-gold-light hover:text-paper" : "text-ink hover:text-gold-dark")}
         >
           Subscribe
-          <ArrowRight className="size-4 transition-transform duration-300 group-hover:translate-x-1" strokeWidth={1.5} />
+          <ArrowRight className="size-3.5 sm:size-4 transition-transform duration-300 group-hover:translate-x-1" strokeWidth={1.5} />
         </button>
       </div>
       {state === "error" && (
@@ -86,7 +85,6 @@ export function NewsletterForm({ inverse }: { inverse?: boolean }) {
   );
 }
 
-// মোবাইলের জন্য মার্জিত লাক্সারি অ্যাকর্ডিয়ন আইটেম
 function MobileAccordionItem({
   heading,
   links,
@@ -104,15 +102,15 @@ function MobileAccordionItem({
         type="button"
         onClick={onToggle}
         aria-expanded={isOpen}
-        className="flex w-full items-center justify-between py-4 text-left cursor-pointer transition-colors"
+        className="flex w-full items-center justify-between py-2.5 text-left cursor-pointer transition-colors"
       >
-        <span className="inline-flex items-center gap-2 text-[11px] font-semibold uppercase tracking-[0.24em] text-[#dfcaa8] font-mono">
+        <span className="inline-flex items-center gap-2 text-[10px] font-semibold uppercase tracking-[0.24em] text-[#dfcaa8] font-mono">
           <span className="size-1 rounded-full bg-[#c5a880]" aria-hidden />
           {heading}
         </span>
         <ChevronDown
           className={cn(
-            "size-3.5 text-[#c5a880] transition-transform duration-300 ease-out",
+            "size-3 text-[#c5a880] transition-transform duration-300 ease-out",
             isOpen && "rotate-180 text-paper"
           )}
           strokeWidth={1.5}
@@ -122,11 +120,11 @@ function MobileAccordionItem({
       <div
         className={cn(
           "grid transition-all duration-300 ease-[cubic-bezier(0.22,1,0.36,1)]",
-          isOpen ? "grid-rows-[1fr] pb-4" : "grid-rows-[0fr]"
+          isOpen ? "grid-rows-[1fr] pb-3" : "grid-rows-[0fr]"
         )}
       >
         <div className="overflow-hidden">
-          <ul className="flex flex-col gap-2.5 pl-3">
+          <ul className="flex flex-col gap-2 pl-3">
             {links.map((l) => (
               <li key={l.label}>
                 {l.isExternal ? (
@@ -134,14 +132,14 @@ function MobileAccordionItem({
                     href={l.href}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="inline-flex items-center text-[11px] uppercase tracking-[0.16em] text-paper/70 hover:text-[#dfcaa8] transition-colors py-1"
+                    className="inline-flex items-center text-[11px] uppercase tracking-[0.16em] text-paper/70 hover:text-[#dfcaa8] transition-colors py-0.5"
                   >
                     <span>{l.label}</span>
                   </a>
                 ) : (
                   <Link
                     href={l.href}
-                    className="inline-flex items-center text-[11px] uppercase tracking-[0.16em] text-paper/70 hover:text-[#dfcaa8] transition-colors py-1"
+                    className="inline-flex items-center text-[11px] uppercase tracking-[0.16em] text-paper/70 hover:text-[#dfcaa8] transition-colors py-0.5"
                   >
                     <span>{l.label}</span>
                   </Link>
@@ -225,18 +223,19 @@ export function Footer() {
     <footer className="relative bg-ink text-paper border-t border-white/10 overflow-hidden">
       <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-[#c5a880]/50 to-transparent" aria-hidden />
 
-      <div className="container-x py-16 lg:py-24">
+      {/* মোবাইলে কমপ্যাক্ট py-8 এবং ডেস্কটপে লাক্সারি py-24 */}
+      <div className="container-x py-8 sm:py-16 lg:py-24">
         {/* Brand mark */}
-        <div className="mb-14 text-center max-w-lg mx-auto">
-          <p className="font-display text-2xl sm:text-3xl tracking-[0.24em] text-paper mb-3">
+        <div className="mb-6 sm:mb-14 text-center max-w-lg mx-auto">
+          <p className="font-display text-xl sm:text-3xl tracking-[0.24em] text-paper mb-2 sm:mb-3">
             {BRAND_CONFIG.brandName}
           </p>
-          <p className="text-[11px] uppercase tracking-[0.22em] text-paper/50 font-mono">
+          <p className="text-[10px] sm:text-[11px] uppercase tracking-[0.22em] text-paper/50 font-mono">
             Quiet garments. Precise construction. Hand-finished in Dhaka.
           </p>
         </div>
 
-        {/* 1. Desktop Columns (sm স্ক্রিন এবং বড় স্ক্রিনের জন্য - আগের মতোই সম্পূর্ণ অপরিবর্তিত) */}
+        {/* 1. Desktop Columns (sm স্ক্রিন এবং বড় স্ক্রিনের জন্য - অপরিবর্তিত) */}
         <div className="hidden sm:grid sm:grid-cols-4 gap-10 max-w-4xl mx-auto">
           {COLUMNS.map((col) => (
             <div key={col.heading}>
@@ -277,7 +276,7 @@ export function Footer() {
           ))}
         </div>
 
-        {/* 2. Mobile Clean Accordion (শুধুমাত্র মোবাইলে দৃশ্যমান - নো জটলা, সুপার ক্লিন) */}
+        {/* 2. Mobile Clean Accordion (মোবাইলে সুপার স্লিম ও কমপ্যাক্ট) */}
         <div className="sm:hidden max-w-md mx-auto">
           {COLUMNS.map((col) => (
             <MobileAccordionItem
@@ -293,7 +292,7 @@ export function Footer() {
         </div>
 
         {/* Bottom bar */}
-        <div className="mt-16 pt-8 border-t border-paper/10 flex flex-col sm:flex-row items-center justify-between gap-4">
+        <div className="mt-8 pt-5 sm:mt-16 sm:pt-8 border-t border-paper/10 flex flex-col sm:flex-row items-center justify-between gap-3 sm:gap-4">
           <p className="text-[10px] uppercase tracking-[0.22em] text-paper/40 font-mono text-center sm:text-left">
             © {new Date().getFullYear()} {BRAND_CONFIG.brandName}. Handcrafted in Dhaka Atelier.
           </p>
