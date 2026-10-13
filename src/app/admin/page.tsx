@@ -35,6 +35,7 @@ import {
   MessageCircle,
   ShieldAlert,
   ShieldCheck,
+  ChevronDown,
 } from "lucide-react";
 import Image from "next/image";
 import { useEffect, useMemo, useRef, useState } from "react";
@@ -1015,26 +1016,72 @@ export default function AdminPage() {
   return (
     <div className="container-x pb-24 pt-24 lg:pt-28 min-h-screen">
       {/* Header Area */}
-      <div className="flex flex-wrap items-start justify-between gap-6 mb-12 border-b border-line pb-8">
+      <div className="flex flex-wrap items-start justify-between gap-6 mb-8 lg:mb-12 border-b border-line pb-6 lg:pb-8">
         <div>
-          <p className="text-[11px] font-semibold uppercase tracking-[0.25em] text-gold-dark mb-2">
+          <p className="text-[10px] sm:text-[11px] font-semibold uppercase tracking-[0.25em] text-gold-dark mb-2">
             {BRAND_CONFIG.brandName} Atelier Command
           </p>
-          <h1 className="font-display text-4xl sm:text-5xl text-ink tracking-tight">Back Office</h1>
-          <p className="mt-4 max-w-2xl text-sm leading-relaxed text-ash">
+          <h1 className="font-display text-3xl sm:text-5xl text-ink tracking-tight">Back Office</h1>
+          <p className="mt-3 sm:mt-4 max-w-2xl text-xs sm:text-sm leading-relaxed text-ash">
             Live database synchronized with your Singapore cluster. Manage products, edit storefront policies, FAQs,
             marquee text, shop texts & socials, customize banners, and control inventory.
           </p>
         </div>
-        <div className="flex items-center gap-2.5 bg-emerald-500/10 px-4 py-2 rounded-full border border-emerald-500/20 shadow-sm backdrop-blur-md">
-          <Database className="size-4 text-emerald-600 animate-pulse" />
-          <span className="text-[11px] font-bold uppercase tracking-[0.15em] text-emerald-700">Live Production DB</span>
+        <div className="flex items-center gap-2 bg-emerald-500/10 px-3.5 py-1.5 rounded-full border border-emerald-500/20 shadow-xs backdrop-blur-md">
+          <Database className="size-3.5 text-emerald-600 animate-pulse" />
+          <span className="text-[10px] sm:text-[11px] font-bold uppercase tracking-[0.15em] text-emerald-700">Live Production DB</span>
+        </div>
+      </div>
+
+      {/* ——— MOBILE TABS NAVIGATION (চ্যাপ্টাভাব সম্পূর্ণ ফিক্সড) ——— */}
+      <div className="lg:hidden mb-8 space-y-3">
+        {/* কুইক ড্রপডাউন সিলেক্টর */}
+        <div className="relative">
+          <label className="text-[10px] font-mono font-bold uppercase tracking-widest text-ash mb-1.5 block">
+            Switch Module / মডিউল সিলেক্ট করুন:
+          </label>
+          <div className="relative">
+            <select
+              value={tab}
+              onChange={(e) => setTab(e.target.value as Tab)}
+              className="w-full h-12 bg-paper border border-line rounded-xs px-4 pr-10 text-xs font-bold uppercase tracking-wider text-ink shadow-xs appearance-none outline-none focus:border-gold-dark"
+            >
+              {nav.map((n) => (
+                <option key={n.id} value={n.id}>
+                  {n.label}
+                </option>
+              ))}
+            </select>
+            <ChevronDown className="size-4 text-fog absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none" />
+          </div>
+        </div>
+
+        {/* সোয়াইপযোগ্য প্রিমিয়াম পিল বার (কোনো বাটন চাপবে না) */}
+        <div className="flex gap-2 overflow-x-auto no-scrollbar py-1">
+          {nav.map((n) => {
+            const active = tab === n.id;
+            return (
+              <button
+                key={n.id}
+                onClick={() => setTab(n.id)}
+                className={cn(
+                  "shrink-0 inline-flex items-center gap-2 px-4 py-2.5 rounded-xs text-[10px] font-bold uppercase tracking-widest transition-all shadow-2xs cursor-pointer",
+                  active
+                    ? "bg-ink text-paper border border-ink shadow-sm"
+                    : "bg-paper text-ash border border-line hover:text-ink hover:border-ink/60"
+                )}
+              >
+                <n.icon className={cn("size-3.5", active ? "text-gold" : "text-fog")} strokeWidth={1.8} />
+                <span>{n.label}</span>
+              </button>
+            );
+          })}
         </div>
       </div>
 
       <div className="grid gap-12 lg:grid-cols-[250px_1fr]">
-        {/* Sidebar Navigation */}
-        <nav className="flex gap-2 overflow-x-auto no-scrollbar lg:flex-col" aria-label="Admin sections">
+        {/* ——— DESKTOP SIDEBAR NAVIGATION (পিসিতে আগের মতোই হুবহু অক্ষত) ——— */}
+        <nav className="hidden lg:flex flex-col gap-2" aria-label="Admin sections">
           {nav.map((n) => {
             const active = tab === n.id;
             return (
@@ -2665,7 +2712,7 @@ function OfflineOrderModal({
             <Input label="Name *" required value={cName} onChange={(e) => setCName(e.target.value)} placeholder="e.g. Tanvir Ahmed" />
             <Input label="Phone *" required value={cPhone} onChange={(e) => setCPhone(e.target.value)} placeholder="017XXXXXXXX" />
             <div className="grid grid-cols-2 gap-4">
-              <Input label="Address *" required value={cAddress} onChange={(e) => setCAddress(e.target.value)} placeholder="House, Road, Area" />
+              <Input label="Address *" required value={setCAddress ? cAddress : ""} onChange={(e) => setCAddress(e.target.value)} placeholder="House, Road, Area" />
               <Select
                 label="City *"
                 value={cCity}
@@ -3154,7 +3201,6 @@ function CourierPackingSlipModal({
     setBlacklisting(true);
     await onToggleBlacklist(order.address.phone, isBlacklisted);
     setBlacklisting(false);
-    // রিফ্রেশ করা
     fetch(`/api/admin/fraud-check?phone=${encodeURIComponent(order.address.phone)}`, { cache: "no-store" })
       .then((res) => res.json())
       .then((d) => setFraudData(d))
@@ -3188,8 +3234,6 @@ function CourierPackingSlipModal({
   return (
     <Modal open={true} onClose={onClose} title={`Order Slip — ${order.id}`} wide>
       <div className="space-y-6">
-        
-        {/* কাস্টমার ফ্রড স্কোর ও ব্ল্যাকলিস্ট কার্ড */}
         <div
           className={cn(
             "rounded-sm border p-5 flex flex-wrap items-center justify-between gap-4 shadow-2xs transition-all",
@@ -3250,7 +3294,6 @@ function CourierPackingSlipModal({
           </div>
         </div>
 
-        {/* কুরিয়ার বুকিং সেকশন */}
         {localTracking ? (
           <div className="bg-emerald-500/10 rounded-sm border border-emerald-500/20 p-5 flex flex-wrap items-center justify-between gap-4 shadow-2xs">
             <div className="flex items-center gap-4">
