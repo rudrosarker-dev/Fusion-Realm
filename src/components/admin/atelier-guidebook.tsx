@@ -1,4 +1,3 @@
-// START OF FILE src/components/admin/atelier-guidebook.tsx
 "use client";
 
 import { useEffect, useRef, useState } from "react";
@@ -13,35 +12,32 @@ import {
   Truck,
   ShieldCheck,
   ShoppingBag,
-  Tag,
   Users,
   Boxes,
-  HelpCircle,
-  SlidersHorizontal,
   Bookmark,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { BRAND_CONFIG } from "@/lib/brand.config";
 
-// ওয়েব অডিও এপিআই দিয়ে খাঁটি কাগজের খসখস শব্দ তৈরি (নো এক্সটারনাল ফাইল ডিপেন্ডেন্সি)
+// ওয়েব অডিও এপিআই দিয়ে খাঁটি কাগজের মৃদু খসখস শব্দ তৈরি
 function playPageTurnSound() {
   try {
     const ctx = new (window.AudioContext || (window as any).webkitAudioContext)();
-    const bufferSize = ctx.sampleRate * 0.12;
+    const bufferSize = Math.floor(ctx.sampleRate * 0.16);
     const buffer = ctx.createBuffer(1, bufferSize, ctx.sampleRate);
     const data = buffer.getChannelData(0);
     for (let i = 0; i < bufferSize; i++) {
-      data[i] = (Math.random() * 2 - 1) * Math.exp(-i / (bufferSize * 0.3));
+      data[i] = (Math.random() * 2 - 1) * Math.exp(-i / (bufferSize * 0.35));
     }
     const noise = ctx.createBufferSource();
     noise.buffer = buffer;
     const filter = ctx.createBiquadFilter();
     filter.type = "bandpass";
-    filter.frequency.value = 1400;
-    filter.Q.value = 1.8;
+    filter.frequency.value = 1100;
+    filter.Q.value = 1.4;
     const gain = ctx.createGain();
-    gain.gain.setValueAtTime(0.25, ctx.currentTime);
-    gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.12);
+    gain.gain.setValueAtTime(0.18, ctx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.16);
     noise.connect(filter);
     filter.connect(gain);
     gain.connect(ctx.destination);
@@ -308,13 +304,25 @@ export function AtelierGuidebookModal({
   onClose: () => void;
 }) {
   const [currentPage, setCurrentPage] = useState(0); // 0 = Cover, 1..N = Chapters, Last = Back Cover
+  const [mobileSubPage, setMobileSubPage] = useState<0 | 1>(0); // মোবাইলের জন্য: 0 = বাম পৃষ্ঠা, 1 = ডান পৃষ্ঠা
+  const [isMobile, setIsMobile] = useState(false);
   const [isFlipping, setIsFlipping] = useState(false);
   const [soundEnabled, setSoundEnabled] = useState(true);
   const [dragProgress, setDragProgress] = useState(0);
   const [isDragging, setIsDragging] = useState(false);
   const dragStartX = useRef(0);
 
-  const totalPages = CHAPTERS.length + 2; // Cover + Chapters + Back Cover
+  const totalPages = CHAPTERS.length + 2;
+
+  // স্ক্রিন সাইজ চেক (মোবাইল নাকি ডেস্কটপ)
+  useEffect(() => {
+    const handleResize = () => {
+      setIsMobile(window.innerWidth < 768);
+    };
+    handleResize();
+    window.addEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
+  }, []);
 
   useEffect(() => {
     if (!open) return;
@@ -325,22 +333,67 @@ export function AtelierGuidebookModal({
     };
     window.addEventListener("keydown", handleKey);
     return () => window.removeEventListener("keydown", handleKey);
-  }, [open, currentPage, isFlipping]);
+  }, [open, currentPage, mobileSubPage, isMobile, isFlipping]);
 
+  // ধীরেসুস্থে ও রিয়েলিস্টিক পেজ টার্নিং লজিক
   const nextPage = () => {
-    if (currentPage >= totalPages - 1 || isFlipping) return;
-    if (soundEnabled) playPageTurnSound();
-    setIsFlipping(true);
-    setCurrentPage((p) => p + 1);
-    setTimeout(() => setIsFlipping(false), 550);
+    if (isFlipping) return;
+
+    if (isMobile) {
+      if (currentPage === 0) {
+        if (soundEnabled) playPageTurnSound();
+        setIsFlipping(true);
+        setCurrentPage(1);
+        setMobileSubPage(0);
+        setTimeout(() => setIsFlipping(false), 750);
+      } else if (currentPage > 0 && currentPage <= CHAPTERS.length) {
+        if (soundEnabled) playPageTurnSound();
+        setIsFlipping(true);
+        if (mobileSubPage === 0) {
+          setMobileSubPage(1);
+        } else {
+          setCurrentPage((p) => p + 1);
+          setMobileSubPage(0);
+        }
+        setTimeout(() => setIsFlipping(false), 750);
+      }
+    } else {
+      if (currentPage >= totalPages - 1) return;
+      if (soundEnabled) playPageTurnSound();
+      setIsFlipping(true);
+      setCurrentPage((p) => p + 1);
+      setTimeout(() => setIsFlipping(false), 750);
+    }
   };
 
   const prevPage = () => {
-    if (currentPage <= 0 || isFlipping) return;
-    if (soundEnabled) playPageTurnSound();
-    setIsFlipping(true);
-    setCurrentPage((p) => p - 1);
-    setTimeout(() => setIsFlipping(false), 550);
+    if (isFlipping) return;
+
+    if (isMobile) {
+      if (currentPage === totalPages - 1) {
+        if (soundEnabled) playPageTurnSound();
+        setIsFlipping(true);
+        setCurrentPage(CHAPTERS.length);
+        setMobileSubPage(1);
+        setTimeout(() => setIsFlipping(false), 750);
+      } else if (currentPage > 0 && currentPage <= CHAPTERS.length) {
+        if (soundEnabled) playPageTurnSound();
+        setIsFlipping(true);
+        if (mobileSubPage === 1) {
+          setMobileSubPage(0);
+        } else {
+          setCurrentPage((p) => p - 1);
+          setMobileSubPage(currentPage === 1 ? 0 : 1);
+        }
+        setTimeout(() => setIsFlipping(false), 750);
+      }
+    } else {
+      if (currentPage <= 0) return;
+      if (soundEnabled) playPageTurnSound();
+      setIsFlipping(true);
+      setCurrentPage((p) => p - 1);
+      setTimeout(() => setIsFlipping(false), 750);
+    }
   };
 
   const jumpToChapter = (index: number) => {
@@ -348,10 +401,11 @@ export function AtelierGuidebookModal({
     if (soundEnabled) playPageTurnSound();
     setIsFlipping(true);
     setCurrentPage(index + 1);
-    setTimeout(() => setIsFlipping(false), 550);
+    setMobileSubPage(0);
+    setTimeout(() => setIsFlipping(false), 750);
   };
 
-  // মাউস ও টাচ ড্র্যাগ হ্যান্ডলার (বাস্তবসম্মত কোণা ভাঁজ হওয়ার ফিজিক্স)
+  // মাউস ও টাচ ড্র্যাগ হ্যান্ডলার (শান্ত ও ওজনদার টান)
   const handleTouchStart = (e: React.TouchEvent | React.MouseEvent) => {
     setIsDragging(true);
     dragStartX.current = "touches" in e ? e.touches[0].clientX : e.clientX;
@@ -362,16 +416,18 @@ export function AtelierGuidebookModal({
     if (!isDragging) return;
     const clientX = "touches" in e ? e.touches[0].clientX : e.clientX;
     const delta = dragStartX.current - clientX;
-    const percent = Math.max(-100, Math.min(100, (delta / 250) * 100));
+    // টানার দূরত্ব ৪০০ পিক্সেলে নামিয়ে আরও ভারিক্কি করা হয়েছে
+    const percent = Math.max(-100, Math.min(100, (delta / 400) * 100));
     setDragProgress(percent);
   };
 
   const handleTouchEnd = () => {
     if (!isDragging) return;
     setIsDragging(false);
-    if (dragProgress > 28) {
+    // স্পর্শকাতরতা কমিয়ে ৫৫% করা হয়েছে যাতে হালকা নাড়াচাড়ায় হুট করে উল্টে না যায়
+    if (dragProgress > 55) {
       nextPage();
-    } else if (dragProgress < -28) {
+    } else if (dragProgress < -55) {
       prevPage();
     }
     setDragProgress(0);
@@ -385,20 +441,24 @@ export function AtelierGuidebookModal({
     <div
       role="dialog"
       aria-modal="true"
-      className="fixed inset-0 z-[120] flex items-center justify-center bg-black/85 backdrop-blur-md p-3 sm:p-6 select-none"
+      className="fixed inset-0 z-[120] flex items-center justify-center bg-black/85 backdrop-blur-md p-2 sm:p-6 select-none"
     >
       {/* টপ ফ্লোটিং কন্ট্রোল বার */}
-      <div className="absolute top-4 inset-x-4 sm:inset-x-8 flex items-center justify-between text-paper z-20">
-        <div className="flex items-center gap-3">
-          <span className="flex size-8 items-center justify-center rounded-full bg-white/10 border border-white/15 text-gold-light">
-            <BookOpen className="size-4" />
+      <div className="absolute top-3 sm:top-4 inset-x-4 sm:inset-x-8 flex items-center justify-between text-paper z-20">
+        <div className="flex items-center gap-2.5 sm:gap-3">
+          <span className="flex size-7 sm:size-8 items-center justify-center rounded-full bg-white/10 border border-white/15 text-gold-light">
+            <BookOpen className="size-3.5 sm:size-4" />
           </span>
           <div>
-            <p className="text-[11px] font-mono uppercase tracking-[0.22em] text-[#dfcaa8]">
+            <p className="text-[10px] sm:text-[11px] font-mono uppercase tracking-[0.22em] text-[#dfcaa8]">
               {BRAND_CONFIG.brandName} Atelier Dossier
             </p>
-            <p className="text-[10px] text-paper/50 font-mono">
-              Master Operations Manual • Page {currentPage + 1} of {totalPages}
+            <p className="text-[9px] sm:text-[10px] text-paper/50 font-mono">
+              {isMobile
+                ? `Chapter ${currentPage > 0 && currentPage <= CHAPTERS.length ? currentPage : "-"} • ${
+                    mobileSubPage === 0 ? "Part 1" : "Part 2"
+                  }`
+                : `Master Operations Manual • Page ${currentPage + 1} of ${totalPages}`}
             </p>
           </div>
         </div>
@@ -407,15 +467,15 @@ export function AtelierGuidebookModal({
           <button
             type="button"
             onClick={() => setSoundEnabled(!soundEnabled)}
-            className="flex size-9 items-center justify-center rounded-full bg-white/10 border border-white/15 text-paper/70 hover:text-white transition-colors cursor-pointer"
+            className="flex size-8 sm:size-9 items-center justify-center rounded-full bg-white/10 border border-white/15 text-paper/70 hover:text-white transition-colors cursor-pointer"
             title={soundEnabled ? "Mute Flip Sound" : "Enable Sound"}
           >
-            {soundEnabled ? <Volume2 className="size-4" /> : <VolumeX className="size-4" />}
+            {soundEnabled ? <Volume2 className="size-3.5 sm:size-4" /> : <VolumeX className="size-3.5 sm:size-4" />}
           </button>
           <button
             type="button"
             onClick={onClose}
-            className="flex size-9 items-center justify-center rounded-full bg-white/10 border border-white/15 text-paper/70 hover:text-white hover:bg-white/20 transition-colors cursor-pointer"
+            className="flex size-8 sm:size-9 items-center justify-center rounded-full bg-white/10 border border-white/15 text-paper/70 hover:text-white hover:bg-white/20 transition-colors cursor-pointer"
             title="Close Manual"
           >
             <X className="size-4" />
@@ -425,7 +485,7 @@ export function AtelierGuidebookModal({
 
       {/* ——— মেইন থ্রি-ডি বুক কন্টেইনার ——— */}
       <div
-        className="relative w-full max-w-5xl h-[78vh] sm:h-[82vh] max-h-[700px] flex items-center justify-center perspective-[2000px]"
+        className="relative w-full max-w-5xl h-[80vh] sm:h-[82vh] max-h-[720px] flex items-center justify-center perspective-[2000px]"
         onMouseDown={handleTouchStart}
         onMouseMove={handleTouchMove}
         onMouseUp={handleTouchEnd}
@@ -433,58 +493,94 @@ export function AtelierGuidebookModal({
         onTouchMove={handleTouchMove}
         onTouchEnd={handleTouchEnd}
       >
-        {/* বইয়ের হার্ডকভার চামড়া/কাপড়ের ছায়া ও ৩-ডি ডেপথ */}
-        <div className="relative w-full h-full flex rounded-lg shadow-[0_30px_90px_rgba(0,0,0,0.8),0_10px_30px_rgba(0,0,0,0.5)] border border-[#3b3226] bg-[#12100d] overflow-hidden">
-
+        {/* বইয়ের হার্ডকভার চামড়া ও ডেপথ শেড */}
+        <div
+          className={cn(
+            "relative w-full h-full flex rounded-lg shadow-[0_30px_90px_rgba(0,0,0,0.8),0_10px_30px_rgba(0,0,0,0.5)] border border-[#3b3226] bg-[#12100d] overflow-hidden transition-all duration-700 ease-[cubic-bezier(0.16,1,0.3,1)]",
+            isFlipping && "scale-[0.988] opacity-95"
+          )}
+        >
           {/* ১. কভার পেজ (Hardcover Presentation) */}
           {currentPage === 0 && (
-            <div className="relative size-full flex flex-col items-center justify-center p-8 sm:p-14 text-center bg-gradient-to-br from-[#1a1714] via-[#0e0d0b] to-[#070605] text-paper border-8 border-[#262019]">
-              <div className="absolute inset-4 border border-[#c5a880]/30 pointer-events-none" />
-              <div className="absolute inset-6 border border-[#c5a880]/15 pointer-events-none" />
+            <div className="relative size-full flex flex-col items-center justify-center p-6 sm:p-14 text-center bg-gradient-to-br from-[#1a1714] via-[#0e0d0b] to-[#070605] text-paper border-4 sm:border-8 border-[#262019]">
+              <div className="absolute inset-3 sm:inset-4 border border-[#c5a880]/30 pointer-events-none" />
+              <div className="absolute inset-5 sm:inset-6 border border-[#c5a880]/15 pointer-events-none" />
 
-              <div className="size-16 sm:size-20 rounded-full border border-[#c5a880]/40 flex items-center justify-center text-[#c5a880] mb-6 shadow-[0_0_20px_rgba(197,168,128,0.2)]">
-                <BookOpen className="size-8 sm:size-10" strokeWidth={1.25} />
+              <div className="size-14 sm:size-20 rounded-full border border-[#c5a880]/40 flex items-center justify-center text-[#c5a880] mb-5 shadow-[0_0_20px_rgba(197,168,128,0.2)]">
+                <BookOpen className="size-7 sm:size-10" strokeWidth={1.25} />
               </div>
 
-              <p className="font-mono text-[10px] sm:text-[11px] uppercase tracking-[0.35em] text-[#dfcaa8] mb-3">
+              <p className="font-mono text-[9px] sm:text-[11px] uppercase tracking-[0.35em] text-[#dfcaa8] mb-2 sm:mb-3">
                 Official Operational Handbook
               </p>
-              <h1 className="font-display text-3xl sm:text-5xl lg:text-6xl tracking-tight text-paper max-w-xl">
+              <h1 className="font-display text-2xl sm:text-5xl lg:text-6xl tracking-tight text-paper max-w-xl">
                 Atelier Master Manual
               </h1>
-              <p className="mt-4 max-w-md text-xs sm:text-sm text-paper/60 font-light leading-relaxed">
+              <p className="mt-3 sm:mt-4 max-w-md text-xs sm:text-sm text-paper/60 font-light leading-relaxed">
                 Complete operating guide for store owners: from handling orders and courier dispatch to stock control and fraud protection.
               </p>
 
-              <div className="mt-10 flex flex-wrap items-center justify-center gap-4">
+              <div className="mt-8 sm:mt-10 flex flex-wrap items-center justify-center gap-4">
                 <button
                   type="button"
                   onClick={nextPage}
-                  className="inline-flex items-center gap-2.5 px-8 py-3.5 bg-[#f6f3eb] text-[#0e0d0b] text-[11px] font-bold uppercase tracking-[0.2em] rounded-xs shadow-lg hover:bg-[#dfcaa8] transition-all cursor-pointer hover:scale-105 active:scale-95"
+                  className="inline-flex items-center gap-2.5 px-7 py-3 sm:px-8 sm:py-3.5 bg-[#f6f3eb] text-[#0e0d0b] text-[10px] sm:text-[11px] font-bold uppercase tracking-[0.2em] rounded-xs shadow-lg hover:bg-[#dfcaa8] transition-all cursor-pointer hover:scale-105 active:scale-95"
                 >
                   <span>Open Manual (বইটি খুলুন)</span>
                   <ChevronRight className="size-4" />
                 </button>
               </div>
 
-              <p className="absolute bottom-10 font-mono text-[9px] uppercase tracking-[0.22em] text-paper/30">
-                Click or drag edge to turn pages
+              <p className="absolute bottom-6 sm:bottom-10 font-mono text-[8px] sm:text-[9px] uppercase tracking-[0.22em] text-paper/30">
+                Click arrow or swipe gently to turn pages
               </p>
             </div>
           )}
 
-          {/* ২. বইয়ের ভেতরের স্প্রেড (Two-Page Luxury Spread on Desktop, One-Page on Mobile) */}
+          {/* ২. বইয়ের ভেতরের স্প্রেড (Desktop: Two Pages | Mobile: Single Page full view) */}
           {currentChapter && (
-            <div className="relative size-full grid grid-cols-1 md:grid-cols-2 divide-y md:divide-y-0 md:divide-x divide-black/15 bg-[#f6f3eb] text-[#0e0d0b]">
-              
-              {/* বইয়ের মাঝের বাঁধানো ভাঁজ (Center Spine Shadow) */}
+            <div className="relative size-full flex flex-col md:grid md:grid-cols-2 divide-y-0 md:divide-x divide-black/15 bg-[#f6f3eb] text-[#0e0d0b] overflow-hidden">
+              {/* বইয়ের মাঝের বাঁধানো খাঁজ (Desktop Center Spine Shadow) */}
               <div
                 className="hidden md:block absolute inset-y-0 left-1/2 -translate-x-1/2 w-12 pointer-events-none z-10 bg-gradient-to-r from-black/15 via-black/25 to-black/15"
                 aria-hidden
               />
 
+              {/* মোবাইলের জন্য কুইক সাব-পেজ সুইচার ট্যাব */}
+              <div className="md:hidden flex items-center justify-between bg-[#ece7da] border-b border-black/10 px-4 py-2 shrink-0 z-20">
+                <button
+                  type="button"
+                  onClick={() => setMobileSubPage(0)}
+                  className={cn(
+                    "text-[10px] font-bold uppercase tracking-wider px-3 py-1 rounded-xs transition-colors cursor-pointer",
+                    mobileSubPage === 0
+                      ? "bg-ink text-paper shadow-xs"
+                      : "text-black/60 hover:text-black"
+                  )}
+                >
+                  ১. পরিচিতি ও তথ্য
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setMobileSubPage(1)}
+                  className={cn(
+                    "text-[10px] font-bold uppercase tracking-wider px-3 py-1 rounded-xs transition-colors cursor-pointer",
+                    mobileSubPage === 1
+                      ? "bg-ink text-paper shadow-xs"
+                      : "text-black/60 hover:text-black"
+                  )}
+                >
+                  ২. কাজের গাইড
+                </button>
+              </div>
+
               {/* বাম পৃষ্ঠা (Left Page: Overview & Concepts) */}
-              <div className="relative p-6 sm:p-10 lg:p-12 flex flex-col justify-between overflow-y-auto thin-scroll">
+              <div
+                className={cn(
+                  "relative p-5 sm:p-10 lg:p-12 flex-col justify-between overflow-y-auto thin-scroll size-full",
+                  isMobile ? (mobileSubPage === 0 ? "flex" : "hidden") : "flex"
+                )}
+              >
                 <div className="space-y-4">
                   <div className="flex items-center justify-between border-b border-black/10 pb-3">
                     <span className="inline-flex items-center gap-2 font-mono text-[10px] uppercase font-bold tracking-[0.2em] text-[#9e7f55]">
@@ -495,7 +591,7 @@ export function AtelierGuidebookModal({
                   </div>
 
                   <div>
-                    <h2 className="font-display text-2xl sm:text-3xl text-ink tracking-tight">
+                    <h2 className="font-display text-xl sm:text-3xl text-ink tracking-tight">
                       {currentChapter.leftPage.heading}
                     </h2>
                     <p className="text-[10px] uppercase font-mono tracking-wider text-black/50 mt-1">
@@ -505,7 +601,9 @@ export function AtelierGuidebookModal({
 
                   <div className="space-y-3 pt-2 text-xs sm:text-[13px] leading-relaxed text-[#2c2824] font-light">
                     {currentChapter.leftPage.body.map((p, i) => (
-                      <p key={i} className="whitespace-pre-line">{p}</p>
+                      <p key={i} className="whitespace-pre-line leading-relaxed">
+                        {p}
+                      </p>
                     ))}
                   </div>
 
@@ -515,20 +613,27 @@ export function AtelierGuidebookModal({
                         💡 প্রো-টিপস (Pro-Tip)
                       </p>
                       {currentChapter.leftPage.tips.map((tip, i) => (
-                        <p key={i} className="text-xs text-[#3b3226] leading-relaxed">• {tip}</p>
+                        <p key={i} className="text-xs text-[#3b3226] leading-relaxed">
+                          • {tip}
+                        </p>
                       ))}
                     </div>
                   )}
                 </div>
 
-                <div className="pt-4 border-t border-black/10 flex items-center justify-between text-[10px] font-mono text-black/40">
+                <div className="pt-4 mt-6 border-t border-black/10 flex items-center justify-between text-[10px] font-mono text-black/40">
                   <span>{BRAND_CONFIG.brandName} Atelier</span>
-                  <span>Turn Left ←</span>
+                  <span>{isMobile ? "Next: কাজের গাইড →" : "Turn Left ←"}</span>
                 </div>
               </div>
 
               {/* ডান পৃষ্ঠা (Right Page: Step-by-Step Instructions) */}
-              <div className="relative p-6 sm:p-10 lg:p-12 flex flex-col justify-between overflow-y-auto thin-scroll bg-[#f3efe4]">
+              <div
+                className={cn(
+                  "relative p-5 sm:p-10 lg:p-12 flex-col justify-between overflow-y-auto thin-scroll bg-[#f3efe4] size-full",
+                  isMobile ? (mobileSubPage === 1 ? "flex" : "hidden") : "flex"
+                )}
+              >
                 <div className="space-y-4">
                   <div className="flex items-center justify-between border-b border-black/10 pb-3">
                     <span className="font-mono text-[10px] uppercase tracking-wider text-black/40">
@@ -538,7 +643,7 @@ export function AtelierGuidebookModal({
                   </div>
 
                   <div>
-                    <h3 className="font-display text-2xl sm:text-3xl text-ink tracking-tight">
+                    <h3 className="font-display text-xl sm:text-3xl text-ink tracking-tight">
                       {currentChapter.rightPage.heading}
                     </h3>
                     <p className="text-[10px] uppercase font-mono tracking-wider text-black/50 mt-1">
@@ -562,8 +667,8 @@ export function AtelierGuidebookModal({
                   )}
                 </div>
 
-                <div className="pt-4 border-t border-black/10 flex items-center justify-between text-[10px] font-mono text-black/40">
-                  <span>Drag corner to turn</span>
+                <div className="pt-4 mt-6 border-t border-black/10 flex items-center justify-between text-[10px] font-mono text-black/40">
+                  <span>{isMobile ? "← Prev: পরিচিতি" : "Drag edge to turn"}</span>
                   <span>Turn Right →</span>
                 </div>
               </div>
@@ -572,32 +677,35 @@ export function AtelierGuidebookModal({
 
           {/* ৩. ব্যাক কভার (Back Cover) */}
           {currentPage === totalPages - 1 && (
-            <div className="relative size-full flex flex-col items-center justify-center p-8 sm:p-14 text-center bg-gradient-to-br from-[#1a1714] via-[#0e0d0b] to-[#070605] text-paper border-8 border-[#262019]">
-              <div className="absolute inset-4 border border-[#c5a880]/30 pointer-events-none" />
+            <div className="relative size-full flex flex-col items-center justify-center p-6 sm:p-14 text-center bg-gradient-to-br from-[#1a1714] via-[#0e0d0b] to-[#070605] text-paper border-4 sm:border-8 border-[#262019]">
+              <div className="absolute inset-3 sm:inset-4 border border-[#c5a880]/30 pointer-events-none" />
 
-              <div className="size-14 rounded-full border border-[#c5a880]/40 flex items-center justify-center text-[#c5a880] mb-4">
-                <Bookmark className="size-6" />
+              <div className="size-12 sm:size-14 rounded-full border border-[#c5a880]/40 flex items-center justify-center text-[#c5a880] mb-4">
+                <Bookmark className="size-5 sm:size-6" />
               </div>
 
-              <h2 className="font-display text-3xl sm:text-4xl text-paper">
+              <h2 className="font-display text-2xl sm:text-4xl text-paper">
                 End of Operating Manual
               </h2>
               <p className="mt-3 max-w-md text-xs sm:text-sm text-paper/60 font-light leading-relaxed">
                 আপনার ওয়েবসাইট হস্তান্তরের পর কোনো সহায়তার প্রয়োজন হলে যেকোনো সময় আমাদের সাথে যোগাযোগ করতে পারেন।
               </p>
 
-              <div className="mt-8 flex gap-3">
+              <div className="mt-8 flex flex-wrap justify-center gap-3">
                 <button
                   type="button"
-                  onClick={() => setCurrentPage(0)}
-                  className="px-6 py-3 bg-[#f6f3eb] text-[#0e0d0b] text-[11px] font-bold uppercase tracking-[0.2em] rounded-xs shadow-md hover:bg-[#dfcaa8] transition-all cursor-pointer"
+                  onClick={() => {
+                    setCurrentPage(0);
+                    setMobileSubPage(0);
+                  }}
+                  className="px-6 py-3 bg-[#f6f3eb] text-[#0e0d0b] text-[10px] sm:text-[11px] font-bold uppercase tracking-[0.2em] rounded-xs shadow-md hover:bg-[#dfcaa8] transition-all cursor-pointer"
                 >
                   প্রথম পৃষ্ঠায় ফিরুন
                 </button>
                 <button
                   type="button"
                   onClick={onClose}
-                  className="px-6 py-3 border border-white/20 text-white text-[11px] font-semibold uppercase tracking-[0.2em] rounded-xs hover:bg-white/10 transition-all cursor-pointer"
+                  className="px-6 py-3 border border-white/20 text-white text-[10px] sm:text-[11px] font-semibold uppercase tracking-[0.2em] rounded-xs hover:bg-white/10 transition-all cursor-pointer"
                 >
                   ম্যানুয়াল বন্ধ করুন
                 </button>
@@ -605,27 +713,27 @@ export function AtelierGuidebookModal({
             </div>
           )}
 
-          {/* কাগজের ডায়নামিক ড্র্যাগ কার্ল শ্যাডো (Drag Corner Curl Effect) */}
+          {/* কাগজের ডায়নামিক ড্র্যাগ কার্ল ছায়া */}
           {isDragging && Math.abs(dragProgress) > 5 && (
             <div
               style={{
-                opacity: Math.min(0.65, Math.abs(dragProgress) / 100),
+                opacity: Math.min(0.55, Math.abs(dragProgress) / 100),
                 transform: `translateX(${dragProgress > 0 ? 100 - dragProgress : -100 - dragProgress}%)`,
               }}
-              className="absolute inset-0 pointer-events-none z-30 bg-gradient-to-r from-transparent via-black/40 to-black/80 transition-opacity"
+              className="absolute inset-0 pointer-events-none z-30 bg-gradient-to-r from-transparent via-black/35 to-black/75 transition-opacity"
             />
           )}
         </div>
 
-        {/* ফ্লিপ কন্ট্রোল বোতাম (বামে ও ডানে নেভিগেশন) */}
-        {currentPage > 0 && (
+        {/* ফ্লিপ কন্ট্রোল অ্যারো বোতাম (বামে ও ডানে নেভিগেশন) */}
+        {(currentPage > 0 || (isMobile && mobileSubPage > 0)) && (
           <button
             type="button"
             onClick={prevPage}
-            className="absolute left-2 sm:-left-6 top-1/2 -translate-y-1/2 size-10 sm:size-12 rounded-full bg-paper/90 text-ink shadow-2xl flex items-center justify-center border border-line hover:scale-110 active:scale-95 transition-all z-40 cursor-pointer"
+            className="absolute left-1 sm:-left-6 top-1/2 -translate-y-1/2 size-9 sm:size-12 rounded-full bg-paper/90 text-ink shadow-2xl flex items-center justify-center border border-line hover:scale-110 active:scale-95 transition-all z-40 cursor-pointer"
             aria-label="Previous Page"
           >
-            <ChevronLeft className="size-6" />
+            <ChevronLeft className="size-5 sm:size-6" />
           </button>
         )}
 
@@ -633,21 +741,24 @@ export function AtelierGuidebookModal({
           <button
             type="button"
             onClick={nextPage}
-            className="absolute right-2 sm:-right-6 top-1/2 -translate-y-1/2 size-10 sm:size-12 rounded-full bg-paper/90 text-ink shadow-2xl flex items-center justify-center border border-line hover:scale-110 active:scale-95 transition-all z-40 cursor-pointer"
+            className="absolute right-1 sm:-right-6 top-1/2 -translate-y-1/2 size-9 sm:size-12 rounded-full bg-paper/90 text-ink shadow-2xl flex items-center justify-center border border-line hover:scale-110 active:scale-95 transition-all z-40 cursor-pointer"
             aria-label="Next Page"
           >
-            <ChevronRight className="size-6" />
+            <ChevronRight className="size-5 sm:size-6" />
           </button>
         )}
       </div>
 
-      {/* ——— চ্যাপ্টার বুকমার্ক রিবন (সরাসরি অধ্যায়ে যাওয়ার শর্টকাট) ——— */}
-      <div className="absolute bottom-4 inset-x-4 flex items-center justify-center gap-1.5 sm:gap-2 overflow-x-auto no-scrollbar z-20">
+      {/* ——— চ্যাপ্টার বুকমার্ক রিবন ——— */}
+      <div className="absolute bottom-3 sm:bottom-4 inset-x-3 sm:inset-x-4 flex items-center justify-start sm:justify-center gap-1.5 sm:gap-2 overflow-x-auto no-scrollbar z-20 py-1">
         <button
           type="button"
-          onClick={() => setCurrentPage(0)}
+          onClick={() => {
+            setCurrentPage(0);
+            setMobileSubPage(0);
+          }}
           className={cn(
-            "px-3 py-1.5 rounded-full text-[10px] font-mono uppercase tracking-wider transition-all cursor-pointer whitespace-nowrap shadow-xs",
+            "px-3 py-1.5 rounded-full text-[9px] sm:text-[10px] font-mono uppercase tracking-wider transition-all cursor-pointer whitespace-nowrap shadow-xs shrink-0",
             currentPage === 0
               ? "bg-[#c5a880] text-black font-bold"
               : "bg-black/60 text-paper/70 hover:text-white border border-white/10"
@@ -662,7 +773,7 @@ export function AtelierGuidebookModal({
             type="button"
             onClick={() => jumpToChapter(idx)}
             className={cn(
-              "px-3 py-1.5 rounded-full text-[10px] font-mono uppercase tracking-wider transition-all cursor-pointer whitespace-nowrap shadow-xs",
+              "px-3 py-1.5 rounded-full text-[9px] sm:text-[10px] font-mono uppercase tracking-wider transition-all cursor-pointer whitespace-nowrap shadow-xs shrink-0",
               currentPage === idx + 1
                 ? "bg-[#c5a880] text-black font-bold"
                 : "bg-black/60 text-paper/70 hover:text-white border border-white/10"
