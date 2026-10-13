@@ -25,9 +25,11 @@ import {
   AlertTriangle,
   UploadCloud,
   X,
+  BookOpen,
 } from "lucide-react";
 import { Modal } from "@/components/ui/overlays";
 import { Button, EmptyState, Input, Price, Select } from "@/components/ui/primitives";
+import { AtelierGuidebookModal } from "@/components/admin/atelier-guidebook";
 import { useToast } from "@/lib/store";
 import { cn, formatPrice, isLowStock, isSoldOut, totalStock } from "@/lib/utils";
 import { BRAND_CONFIG } from "@/lib/brand.config";
@@ -185,6 +187,7 @@ export default function StaffPage() {
   const { push } = useToast();
   const [staffInfo, setStaffInfo] = useState<any>(null);
   const [activeTab, setActiveTab] = useState<string>("orders");
+  const [guidebookOpen, setGuidebookOpen] = useState(false);
 
   const [orders, setOrders] = useState<any[]>([]);
   const [productsList, setProductsList] = useState<Product[]>([]);
@@ -547,6 +550,18 @@ export default function StaffPage() {
           <p className="mt-2 text-xs text-ash">
             Role: <strong className="text-ink">{staffInfo?.roleTitle || "Assigned Operations"}</strong> • Access to ({navItems.length}) operational module(s).
           </p>
+        </div>
+
+        {/* Master Guidebook Manual Button for Staff */}
+        <div className="flex items-center gap-3">
+          <button
+            type="button"
+            onClick={() => setGuidebookOpen(true)}
+            className="inline-flex items-center gap-2 px-4 py-2 rounded-xs bg-gold/15 text-gold-dark border border-gold/40 hover:bg-gold/25 text-[10px] sm:text-[11px] font-bold uppercase tracking-[0.15em] transition-all shadow-xs cursor-pointer active:scale-95"
+          >
+            <BookOpen className="size-3.5" />
+            <span>📖 Atelier Master Manual</span>
+          </button>
         </div>
       </div>
 
@@ -977,8 +992,7 @@ export default function StaffPage() {
               </div>
             </div>
           )}
-
-          {/* 3. INVENTORY MODULE (FULL POWER: MATRIX & DIRECT EDIT) */}
+{/* 3. INVENTORY MODULE (FULL POWER: MATRIX & DIRECT EDIT) */}
           {activeTab === "inventory" && permissions.includes("inventory") && (
             <div className="space-y-6">
               <InventoryMatrix products={productsList} onEdit={(product) => setEditProduct(product)} />
@@ -1105,6 +1119,9 @@ export default function StaffPage() {
       <ProductEditModal product={editProduct} onClose={() => setEditProduct(null)} onSave={saveEdit} />
       <AddProductModal open={addOpen} onClose={() => setAddOpen(false)} onAdd={handleAddProduct} />
       <AddCouponModal open={addCouponOpen} onClose={() => setAddCouponOpen(false)} onAdd={handleCreateCoupon} />
+
+      {/* 3D Atelier Master Manual Guidebook Modal */}
+      <AtelierGuidebookModal open={guidebookOpen} onClose={() => setGuidebookOpen(false)} />
     </div>
   );
 }
