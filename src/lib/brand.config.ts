@@ -1,6 +1,6 @@
 // START OF FILE src/lib/brand.config.ts
 export const BRAND_CONFIG = {
-  brandName: "Tholvex Studio",
+  brandName: "Fusion Realm",
   tagline: "Considered garments for everyday movement.",
   description: "An independent fashion house designing quiet, precise garments in heavyweight natural cloth.",
 
