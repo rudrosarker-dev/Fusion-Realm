@@ -1,18 +1,33 @@
+// START OF FILE src/app/api/admin/auth/route.ts
 import { NextRequest, NextResponse } from "next/server";
 import { cookies } from "next/headers";
 import { eq } from "drizzle-orm";
 import { db } from "@/db";
 import { users } from "@/db/schema";
+import { comparePassword } from "@/lib/password";
+import { signSession, verifySession } from "@/lib/auth-token";
+import { checkRateLimit } from "@/lib/security";
+
+export const dynamic = "force-dynamic";
 
 export async function POST(req: NextRequest) {
   try {
+    // ১. ব্রুট-ফোর্স আক্রমণ প্রতিরোধে রেট লিমিটিং (১ মিনিটে সর্বোচ্চ ৫ বার লগইন চেষ্টা)
+    const ip = req.headers.get("x-forwarded-for") || "unknown";
+    if (!checkRateLimit(`admin-auth-${ip}`, 5, 60)) {
+      return NextResponse.json(
+        { error: "Too many login attempts. Please wait 1 minute before trying again." },
+        { status: 429 }
+      );
+    }
+
     const { email, password } = await req.json();
 
     if (!email || !password) {
       return NextResponse.json({ error: "Email and password are required" }, { status: 400 });
     }
 
-    // 1. Neon Database থেকে ইউজার চেক
+    // ২. ডাটাবেজ থেকে অ্যাডমিন ইউজার খোঁজা
     const foundUsers = await db
       .select()
       .from(users)
@@ -25,16 +40,19 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Access denied. Invalid credentials." }, { status: 401 });
     }
 
+    // ৩. রোল যাচাই (সুপার অ্যাডমিন বা অর্ডার মডারেটর কিনা)
     if (!["SUPER_ADMIN", "ORDER_MODERATOR"].includes(adminUser.role)) {
       return NextResponse.json({ error: "Access denied. Staff privileges required." }, { status: 403 });
     }
 
-    if (adminUser.passwordHash !== password) {
+    // ৪. সুরক্ষিত পাসওয়ার্ড তুলনা (হ্যাশ এবং পুরনো প্লেইনটেক্সট উভয়েই কাজ করবে)
+    const passwordMatch = await comparePassword(password, adminUser.passwordHash);
+    if (!passwordMatch) {
       return NextResponse.json({ error: "Access denied. Invalid password." }, { status: 401 });
     }
 
-    // 2. সেশন ডাটা তৈরি
-    const sessionData = JSON.stringify({
+    // ৫. ক্রিপ্টোগ্রাফিকালি সাইন করা নিরাপদ সেশন টোকেন তৈরি (HMAC SHA-256)
+    const sessionToken = signSession({
       id: adminUser.id,
       name: adminUser.name,
       email: adminUser.email,
@@ -42,14 +60,13 @@ export async function POST(req: NextRequest) {
       loggedInAt: Date.now(),
     });
 
-    // 3. কোনো maxAge দেওয়া হবে না (যাতে ব্রাউজার/ট্যাব বন্ধ করলে সাথে সাথে সেশন ডিলিট হয়ে লক হয়ে যায়)
+    // ৬. ব্রাউজার সেশনে কুকি সেট করা
     const cookieStore = await cookies();
-    cookieStore.set("nf_admin_session", Buffer.from(sessionData).toString("base64"), {
+    cookieStore.set("nf_admin_session", sessionToken, {
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",
       sameSite: "lax",
       path: "/",
-      // maxAge রিমুভ করা হয়েছে -> এটি এখন একটি খাঁটি "Session Cookie"
     });
 
     return NextResponse.json({
@@ -62,6 +79,7 @@ export async function POST(req: NextRequest) {
   }
 }
 
+// সেশন ভ্যালিডেশন
 export async function GET() {
   try {
     const cookieStore = await cookies();
@@ -71,15 +89,22 @@ export async function GET() {
       return NextResponse.json({ authenticated: false }, { status: 401 });
     }
 
-    const decoded = JSON.parse(Buffer.from(sessionCookie.value, "base64").toString("utf-8"));
+    // টোকেন সিগনেচার যাচাই
+    const decoded = verifySession(sessionCookie.value);
+    if (!decoded || !["SUPER_ADMIN", "ORDER_MODERATOR"].includes(decoded.role)) {
+      return NextResponse.json({ authenticated: false }, { status: 401 });
+    }
+
     return NextResponse.json({ authenticated: true, user: decoded });
   } catch {
     return NextResponse.json({ authenticated: false }, { status: 401 });
   }
 }
 
+// লগআউট
 export async function DELETE() {
   const cookieStore = await cookies();
   cookieStore.delete("nf_admin_session");
   return NextResponse.json({ success: true });
 }
+// END OF FILE src/app/api/admin/auth/route.ts
