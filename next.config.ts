@@ -2,24 +2,25 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
+  // প্রোডাকশন বিল্ডে টাইপচেকিং ও লিন্ট এরর উপেক্ষা করা বন্ধ করা হয়েছে
   typescript: {
-    ignoreBuildErrors: true,
+    ignoreBuildErrors: false,
   },
   eslint: {
-    ignoreDuringBuilds: true,
+    ignoreDuringBuilds: false,
   },
   images: {
-    formats: ["image/avif", "image/webp"], // Next.js স্বয়ংক্রিয়ভাবে সাইজ ছোট করবে
+    formats: ["image/avif", "image/webp"],
+    // ওয়াইল্ডকার্ড '**' এর বদলে নির্দিষ্ট হোস্ট এলাও করা হয়েছে
     remotePatterns: [
-      {
-        protocol: "https",
-        hostname: "**", // সব সোর্স থেকে ইমেজ এলাও করা (DB/Vercel/External)
-      },
+      { protocol: "https", hostname: "res.cloudinary.com" },
+      { protocol: "https", hostname: "*.public.blob.vercel-storage.com" },
+      { protocol: "https", hostname: "images.unsplash.com" },
     ],
-    minimumCacheTTL: 31536000, // ১ বছরের জন্য ইমেজ ক্যাশ করবে
+    minimumCacheTTL: 31536000,
   },
   experimental: {
-    optimizePackageImports: ["lucide-react", "date-fns"], // বান্ডেল সাইজ কমাবে
+    optimizePackageImports: ["lucide-react", "date-fns"],
   },
 };
 
