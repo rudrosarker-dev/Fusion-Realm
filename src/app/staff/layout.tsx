@@ -184,7 +184,7 @@ export default function StaffLayout({ children }: { children: React.ReactNode })
   // লগইন সম্পন্ন স্টাফ ড্যাশবোর্ডের টপ বার
   return (
     <div className="min-h-screen bg-cream">
-      <header className="sticky top-0 z-[100] border-b border-white/10 bg-black/95 text-paper px-6 py-3 flex items-center justify-between text-xs backdrop-blur-md shadow-md">
+      <header className="sticky top-0 z-[100] border-b border-white/10 bg-black/95 text-paper px-6 py-3 flex items-center justify-between text-xs shadow-md">
         <div className="flex items-center gap-3">
           <Shield className="size-4 text-emerald-400" />
           <span className="font-mono text-[10px] uppercase tracking-[0.24em] text-white/80">
