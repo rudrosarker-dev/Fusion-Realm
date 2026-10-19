@@ -716,12 +716,14 @@ export default function AdminPage() {
 
   const handleUpdateAdminProfile = async (e: React.FormEvent) => {
     e.preventDefault();
+    const currentPassword = window.prompt("নিরাপত্তার জন্য আপনার বর্তমান পাসওয়ার্ড দিন:") || "";
+    if (!currentPassword) return;
     setSavingProfile(true);
     try {
       const res = await fetch("/api/admin/profile", {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name: adminName, email: adminEmail, password: adminPassword || undefined }),
+        body: JSON.stringify({ name: adminName, email: adminEmail, password: adminPassword || undefined, currentPassword }),
       });
       const data = await res.json();
       if (res.ok) {

@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { Lock, LogOut, ShieldCheck, ArrowLeft } from "lucide-react";
 import { BRAND_CONFIG } from "@/lib/brand.config";
+import { MfaPanel } from "@/components/security/mfa-panel";
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
   const [loading, setLoading] = useState(true);
@@ -12,6 +13,8 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [otp, setOtp] = useState("");
+  const [needOtp, setNeedOtp] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -56,12 +59,13 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
       const res = await fetch("/api/admin/auth", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, password }),
+        body: JSON.stringify({ email, password, otp }),
       });
 
       const data = await res.json();
 
       if (!res.ok) {
+        if (data.needOtp) setNeedOtp(true);
         setError(data.error || "Access denied. Invalid credentials.");
       } else {
         // এই ট্যাবের জন্য সেশন সক্রিয় মার্ক করা হলো
@@ -69,6 +73,8 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         setAuthenticated(true);
         setAdminUser(data.user);
         setPassword("");
+        setOtp("");
+        setNeedOtp(false);
       }
     } catch {
       setError("Failed to connect to the atelier security service.");
@@ -147,6 +153,25 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
               />
             </div>
 
+            {needOtp && (
+              <div className="space-y-1.5">
+                <label className="text-[10px] uppercase tracking-[0.2em] text-white/50 block font-mono">
+                  Authenticator Code
+                </label>
+                <input
+                  type="text"
+                  inputMode="numeric"
+                  autoComplete="one-time-code"
+                  maxLength={6}
+                  required
+                  value={otp}
+                  onChange={(e) => setOtp(e.target.value)}
+                  placeholder="123456"
+                  className="w-full bg-white/5 border border-white/15 px-4 py-3 text-xs tracking-[0.4em] text-white placeholder:text-white/20 focus:outline-none focus:border-white/60 transition-colors font-mono"
+                />
+              </div>
+            )}
+
             <button
               type="submit"
               disabled={submitting}
@@ -180,6 +205,8 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
           </span>
         </div>
 
+        <div className="flex items-center gap-4">
+          <MfaPanel />
         <button
           onClick={handleSignOut}
           className="inline-flex items-center gap-2 text-[10px] uppercase tracking-[0.2em] text-white/60 hover:text-white transition-colors border border-white/15 px-3 py-1.5 hover:border-gold cursor-pointer"
@@ -187,6 +214,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
           <LogOut className="size-3" />
           <span>Lock Atelier</span>
         </button>
+        </div>
       </header>
 
       <main>{children}</main>

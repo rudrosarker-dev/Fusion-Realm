@@ -1,46 +1,77 @@
-// START OF FILE src/lib/auth-token.ts
+// src/lib/auth-token.ts
+// HMAC-SHA256 দিয়ে সাইন করা সেশন টোকেন (মেয়াদসহ)।
 import crypto from "crypto";
 
-const SESSION_SECRET = process.env.SESSION_SECRET || "tholvex-super-atelier-secret-key-production-32-chars";
+let cachedSecret: string | null = null;
 
-/**
- * ডাটা এনকোড এবং ক্রিপ্টোগ্রাফিক সিগনেচার যুক্ত করে নিরাপদ টোকেন তৈরি করে
- */
-export function signSession(payload: Record<string, any>): string {
-  const data = Buffer.from(JSON.stringify(payload)).toString("base64url");
-  const signature = crypto
-    .createHmac("sha256", SESSION_SECRET)
-    .update(data)
-    .digest("base64url");
-  return `${data}.${signature}`;
+function getSecret(): string {
+  if (cachedSecret) return cachedSecret;
+  const s = process.env.SESSION_SECRET;
+  if (s && s.length >= 32) {
+    cachedSecret = s;
+    return s;
+  }
+  if (process.env.NODE_ENV === "production") {
+    // হার্ডকোড করা ডিফল্ট সিক্রেট আর নেই — সেট না থাকলে অ্যাপ সেশন তৈরিই করবে না।
+    throw new Error("SESSION_SECRET (কমপক্ষে ৩২ অক্ষর) এনভায়রনমেন্টে সেট করা আবশ্যক।");
+  }
+  // ডেভেলপমেন্টে প্রতি প্রসেসে র‍্যান্ডম সিক্রেট (রিস্টার্টে সেশন বাতিল হবে)
+  cachedSecret = crypto.randomBytes(48).toString("hex");
+  return cachedSecret;
 }
 
-/**
- * টোকেনের সিগনেচার যাচাই করে আসল ডাটা রিটার্ন করে। সিগনেচার না মিললে null দেয়।
- */
-export function verifySession<T = any>(token?: string | null): T | null {
-  if (!token || typeof token !== "string") return null;
+function hmac(data: string): string {
+  return crypto.createHmac("sha256", getSecret()).update(data).digest("base64url");
+}
+
+export interface SessionPayload {
+  id: string;
+  role: string;
+  /** passwordHash-এর ফিঙ্গারপ্রিন্ট: পাসওয়ার্ড বদলালে পুরনো সেশন অচল হয় */
+  pv?: string;
+  iat: number;
+  exp: number;
+  [k: string]: any;
+}
+
+export function signSession(payload: Record<string, any>, ttlSeconds: number): string {
+  const now = Math.floor(Date.now() / 1000);
+  const full = { ...payload, iat: now, exp: now + ttlSeconds };
+  const data = Buffer.from(JSON.stringify(full)).toString("base64url");
+  return `${data}.${hmac(data)}`;
+}
+
+export function verifySession<T = SessionPayload>(token?: string | null): T | null {
+  if (!token || typeof token !== "string" || token.length > 4096) return null;
   const parts = token.split(".");
   if (parts.length !== 2) return null;
-
   const [data, signature] = parts;
-  const expectedSignature = crypto
-    .createHmac("sha256", SESSION_SECRET)
-    .update(data)
-    .digest("base64url");
 
-  // Timing-safe buffer comparison to prevent timing attacks
-  const sigBuffer = Buffer.from(signature);
-  const expBuffer = Buffer.from(expectedSignature);
-
-  if (sigBuffer.length !== expBuffer.length || !crypto.timingSafeEqual(sigBuffer, expBuffer)) {
-    return null; // Forged or invalid token
+  let expected: string;
+  try {
+    expected = hmac(data);
+  } catch {
+    return null;
   }
+  const a = Buffer.from(signature);
+  const b = Buffer.from(expected);
+  if (a.length !== b.length || !crypto.timingSafeEqual(a, b)) return null;
 
   try {
-    return JSON.parse(Buffer.from(data, "base64url").toString("utf-8")) as T;
+    const parsed = JSON.parse(Buffer.from(data, "base64url").toString("utf-8"));
+    if (!parsed || typeof parsed.exp !== "number" || parsed.exp < Math.floor(Date.now() / 1000)) return null;
+    return parsed as T;
   } catch {
     return null;
   }
 }
-// END OF FILE src/lib/auth-token.ts
+
+/** পাসওয়ার্ড হ্যাশের ছোট ফিঙ্গারপ্রিন্ট (সেশনে বসানোর জন্য) */
+export function passwordFingerprint(passwordHash: string): string {
+  return crypto.createHash("sha256").update(passwordHash).digest("hex").slice(0, 16);
+}
+
+/** সিক্রেট থেকে উদ্দেশ্য-ভিত্তিক আলাদা কী বানায় (যেমন TOTP সিক্রেট এনক্রিপশন) */
+export function deriveKey(purpose: string): Buffer {
+  return crypto.createHash("sha256").update(`${purpose}:${getSecret()}`).digest();
+}

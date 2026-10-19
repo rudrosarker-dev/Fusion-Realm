@@ -3,7 +3,7 @@
 import { CheckCircle2, Eye, EyeOff, LogOut, Package, Trash2, Truck, FileText, Plus, MapPin, User, Save } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useState } from "react";
-import { Button, Price } from "@/components/ui/primitives";
+import { Button, Input, Price, Select } from "@/components/ui/primitives";
 import { useToast } from "@/lib/store";
 import { cn, LS_KEYS, readLS, writeLS } from "@/lib/utils";
 import { BRAND_CONFIG } from "@/lib/brand.config";
@@ -40,7 +40,6 @@ interface SavedAddress {
   country: string;
 }
 
-const CUSTOMER_SESSION_KEY = "nf-customer-session";
 
 export default function AccountPage() {
   const { push } = useToast();
@@ -72,6 +71,7 @@ export default function AccountPage() {
 
   // ট্র্যাক স্টেট
   const [trackQuery, setTrackQuery] = useState("");
+  const [trackPhone, setTrackPhone] = useState("");
   const [trackedOrder, setTrackedOrder] = useState<any>(null);
   const [trackLoading, setTrackLoading] = useState(false);
   const [trackError, setTrackError] = useState("");
@@ -79,36 +79,33 @@ export default function AccountPage() {
   useEffect(() => {
     if (typeof window !== "undefined") {
       const params = new URLSearchParams(window.location.search);
-      const sessionParam = params.get("session");
       const errorParam = params.get("error");
-
-      if (sessionParam) {
-        try {
-          const userObj = JSON.parse(decodeURIComponent(sessionParam));
-          setCurrentUser(userObj);
-          setEditName(userObj.name || "");
-          setEditEmail(userObj.email || "");
-          writeLS(CUSTOMER_SESSION_KEY, userObj);
-          push("success", `স্বাগতম, ${userObj.name}!`);
-          window.history.replaceState({}, document.title, window.location.pathname);
-        } catch (e) {}
-      } else if (errorParam) {
-        push("error", "গুগল সাইন-ইন ব্যর্থ হয়েছে। আবার চেষ্টা করুন।");
+      const googleOk = params.get("google_login") === "success";
+      if (errorParam) {
+        push("error", "গুগল সাইন-ইন ব্যর্থ হয়েছে। আবার চেষ্টা করুন।");
+      }
+      if (errorParam || googleOk || params.get("session")) {
         window.history.replaceState({}, document.title, window.location.pathname);
       }
+      if (googleOk) push("success", "গুগল দিয়ে সফলভাবে লগইন হয়েছে!");
     }
 
-    const session = readLS<CustomerUser | null>(CUSTOMER_SESSION_KEY, null);
-    if (session) {
-      setCurrentUser(session);
-      setEditName(session.name || "");
-      setEditEmail(session.email || "");
-    }
+    // লগইন অবস্থা সার্ভারের httpOnly কুকি থেকে আসে — URL বা localStorage থেকে নয়
+    fetch("/api/auth/me", { cache: "no-store" })
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data) => {
+        if (data?.authenticated && data.user) {
+          setCurrentUser(data.user);
+          setEditName(data.user.name || "");
+          setEditEmail(data.user.email || "");
+        }
+      })
+      .catch(() => {});
 
     const local = readLS<Order[]>(LS_KEYS.orders, []);
     setOrders(local);
 
-    fetch(`/api/orders?t=${Date.now()}`, { cache: "no-store" })
+    fetch("/api/orders/mine", { cache: "no-store" })
       .then((res) => res.json())
       .then((data) => {
         if (data.orders && Array.isArray(data.orders)) {
@@ -164,7 +161,7 @@ export default function AccountPage() {
       const res = await fetch("/api/auth/login", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email: input, password: password.trim() }),
+        body: JSON.stringify({ email: input, password }),
       });
       const data = await res.json();
 
@@ -174,7 +171,6 @@ export default function AccountPage() {
         setCurrentUser(data.user);
         setEditName(data.user.name || "");
         setEditEmail(data.user.email || "");
-        writeLS(CUSTOMER_SESSION_KEY, data.user);
         push("success", `স্বাগতম, ${data.user.name}!`);
       }
     } catch {
@@ -188,7 +184,7 @@ export default function AccountPage() {
     e.preventDefault();
     const emailClean = regEmail.trim().toLowerCase();
 
-    if (!name.trim() || !isValidEmail(emailClean) || !regPassword.trim() || regPassword.trim().length < 6) {
+    if (!name.trim() || !isValidEmail(emailClean) || !regPassword.trim() || regPassword.length < 8) {
       push("error", "সব তথ্য পূরণ করুন (পাসওয়ার্ড অন্তত ৬ অক্ষরের হতে হবে)।");
       return;
     }
@@ -202,7 +198,7 @@ export default function AccountPage() {
         body: JSON.stringify({
           name: name.trim(),
           email: emailClean,
-          password: regPassword.trim(),
+          password: regPassword,
         }),
       });
       const data = await res.json();
@@ -213,7 +209,6 @@ export default function AccountPage() {
         setCurrentUser(data.user);
         setEditName(data.user.name || "");
         setEditEmail(data.user.email || "");
-        writeLS(CUSTOMER_SESSION_KEY, data.user);
         push("success", `অ্যাকাউন্ট তৈরি সফল হয়েছে! স্বাগতম, ${data.user.name}।`);
       }
     } catch {
@@ -257,7 +252,7 @@ export default function AccountPage() {
   };
 
   const handleSignOut = () => {
-    writeLS(CUSTOMER_SESSION_KEY, null);
+    fetch("/api/auth/logout", { method: "POST" }).catch(() => {});
     setCurrentUser(null);
     setLoginInput("");
     setPassword("");
@@ -303,48 +298,51 @@ export default function AccountPage() {
   // প্রোফাইল (নাম ও ইমেইল) আপডেট হ্যান্ডলার
   const handleUpdateProfile = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!editName.trim() || !editEmail.trim() || !currentUser) {
-      push("error", "নাম ও ইমেইল খালি রাখা যাবে না।");
+    if (!editName.trim() || !currentUser) {
+      push("error", "নাম খালি রাখা যাবে না।");
       return;
     }
-
     setSavingProfile(true);
-    setTimeout(() => {
-      const updatedUser: CustomerUser = {
-        ...currentUser,
-        name: editName.trim(),
-        email: editEmail.trim().toLowerCase(),
-      };
-
-      setCurrentUser(updatedUser);
-      writeLS(CUSTOMER_SESSION_KEY, updatedUser);
+    try {
+      const res = await fetch("/api/auth/profile", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name: editName.trim() }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        push("error", data.error || "প্রোফাইল সেভ করা যায়নি।");
+      } else {
+        setCurrentUser({ ...currentUser, name: data.user.name });
+        push("success", "আপনার প্রোফাইল তথ্য সফলভাবে সেভ হয়েছে!");
+      }
+    } catch {
+      push("error", "সার্ভারের সাথে যোগাযোগ করা যাচ্ছে না।");
+    } finally {
       setSavingProfile(false);
-      push("success", "আপনার প্রোফাইল তথ্য সফলভাবে সেভ হয়েছে!");
-    }, 600);
+    }
   };
 
   // পার্সেল ট্র্যাকিং হ্যান্ডলার
   const handleTrackSearch = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!trackQuery.trim()) return;
+    if (!trackQuery.trim() || !trackPhone.trim()) return;
     setTrackLoading(true);
     setTrackError("");
     setTrackedOrder(null);
 
     try {
-      const res = await fetch(`/api/orders/track?id=${encodeURIComponent(trackQuery.trim())}&phone=${encodeURIComponent(trackQuery.trim())}`);
+      // অর্ডার আইডি এবং ফোন নম্বর — দুটোই মিলতে হবে
+      const res = await fetch(
+        `/api/orders/track?id=${encodeURIComponent(trackQuery.trim())}&phone=${encodeURIComponent(trackPhone.trim())}`
+      );
       const data = await res.json();
       if (res.ok && data.orders && data.orders.length > 0) {
         setTrackedOrder(data.orders[0]);
+      } else if (res.status === 429) {
+        setTrackError("অনেকবার চেষ্টা হয়েছে। এক মিনিট পর আবার চেষ্টা করুন।");
       } else {
-        const found = orders.find(
-          (o) => o.id.toLowerCase() === trackQuery.trim().toLowerCase() || o.address?.phone === trackQuery.trim()
-        );
-        if (found) {
-          setTrackedOrder(found);
-        } else {
-          setTrackError("কোনো পার্সেল বা অর্ডার পাওয়া যায়নি। সঠিক Order ID বা ফোন নম্বর দিন।");
-        }
+        setTrackError("কোনো অর্ডার পাওয়া যায়নি। সঠিক Order ID ও অর্ডারের সময় দেওয়া ফোন নম্বর দিন।");
       }
     } catch {
       setTrackError("সার্ভারের সাথে যোগাযোগ করা যাচ্ছে না।");
@@ -701,17 +699,25 @@ export default function AccountPage() {
           <div className="max-w-2xl space-y-6">
             <form onSubmit={handleTrackSearch} className="border border-line bg-paper p-6 sm:p-7 shadow-xs space-y-4">
               <div>
-                <h2 className="text-xs font-semibold uppercase tracking-[0.2em] text-ink">Track Parcel by Order ID or Phone</h2>
+                <h2 className="text-xs font-semibold uppercase tracking-[0.2em] text-ink">Track Parcel (Order ID + Phone)</h2>
                 <p className="text-xs text-fog mt-0.5">Real-time delivery progress updated by Steadfast courier.</p>
               </div>
 
-              <div className="flex gap-2">
+              <div className="flex flex-col gap-2 sm:flex-row">
                 <input
                   type="text"
                   required
                   value={trackQuery}
                   onChange={(e) => setTrackQuery(e.target.value)}
-                  placeholder="Enter Order ID (e.g. NF-300547) or Phone number"
+                  placeholder="Order ID (e.g. NF-1A2B3C4D5E)"
+                  className="flex-1 border border-line bg-transparent px-3.5 py-2.5 text-xs text-ink outline-none focus:border-ink font-mono placeholder:text-fog"
+                />
+                <input
+                  type="tel"
+                  required
+                  value={trackPhone}
+                  onChange={(e) => setTrackPhone(e.target.value)}
+                  placeholder="Phone used for the order"
                   className="flex-1 border border-line bg-transparent px-3.5 py-2.5 text-xs text-ink outline-none focus:border-ink font-mono placeholder:text-fog"
                 />
                 <Button type="submit" disabled={trackLoading} className="text-xs uppercase">
@@ -866,7 +872,7 @@ export default function AccountPage() {
                   value={editEmail}
                   onChange={(e) => setEditEmail(e.target.value)}
                   className="w-full h-10 border border-line bg-transparent px-3 text-xs text-ink outline-none focus:border-ink font-mono"
-                />
+                 readOnly title="ইমেইল পরিবর্তন সাপোর্টের মাধ্যমে করতে হয়" />
               </div>
 
               <div className="pt-2">

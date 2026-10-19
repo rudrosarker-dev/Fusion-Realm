@@ -11,9 +11,8 @@ import {
   type ReactNode,
 } from "react";
 import { CheckCircle, Info, XCircle, X } from "lucide-react";
-import { COUPONS } from "./config";
 import type { CartItem, Currency, Product } from "./types";
-import { cn, LS_KEYS, readLS, validateCoupon, writeLS } from "./utils";
+import { cn, LS_KEYS, readLS, writeLS } from "./utils";
 
 type ToastTone = "success" | "error" | "info";
 interface Toast {
@@ -118,7 +117,7 @@ interface CartState {
   remove: (key: string) => void;
   setQty: (key: string, qty: number) => void;
   clear: () => void;
-  applyCoupon: (code: string) => { ok: boolean; reason?: string };
+  applyCoupon: (code: string) => Promise<{ ok: boolean; reason?: string }>;
   removeCoupon: () => void;
 }
 
@@ -133,29 +132,11 @@ function CartProvider({ children }: { children: ReactNode }) {
   const [items, setItems] = useState<CartItem[]>([]);
   const [couponCode, setCouponCode] = useState<string | null>(null);
   const [customDiscount, setCustomDiscount] = useState<number>(0);
-  const [activeCoupons, setActiveCoupons] = useState<any[]>(COUPONS);
   const hydrated = useRef(false);
 
   useEffect(() => {
     setItems(readLS<CartItem[]>(LS_KEYS.cart, []));
     hydrated.current = true;
-
-    fetch("/api/admin/coupons", { cache: "no-store" })
-      .then((res) => res.json())
-      .then((data) => {
-        if (data.coupons && Array.isArray(data.coupons)) {
-          const mapped = data.coupons.map((c: any) => ({
-            code: c.code,
-            type: c.discountType,
-            value: c.discountValue,
-            minSubtotalBDT: c.minSpendBDT || 0,
-            expiresAt: c.expiresAt ? new Date(c.expiresAt).toISOString() : "2099-12-31",
-            usageLimit: c.maxUsage || 99999,
-          }));
-          setActiveCoupons([...mapped, ...COUPONS]);
-        }
-      })
-      .catch(() => {});
   }, []);
 
   useEffect(() => {
@@ -190,20 +171,28 @@ function CartProvider({ children }: { children: ReactNode }) {
 
   const discountBDT = useMemo(() => {
     if (!couponCode) return 0;
-    if (customDiscount > 0) return customDiscount;
-    const r = validateCoupon(couponCode, subtotalBDT, activeCoupons);
-    return r.ok ? r.discountBDT : 0;
-  }, [couponCode, customDiscount, subtotalBDT, activeCoupons]);
+    return Math.min(customDiscount, subtotalBDT); // সার্ভারে যাচাই করা মান; অর্ডারের সময় সার্ভার আবার হিসাব করে
+  }, [couponCode, customDiscount, subtotalBDT]);
 
   const applyCoupon = useCallback(
-    (code: string): { ok: boolean; reason?: string } => {
-      const r = validateCoupon(code, subtotalBDT, activeCoupons);
-      if (!r.ok) return { ok: false, reason: r.reason };
-      setCouponCode(r.coupon.code);
-      setCustomDiscount(r.discountBDT);
-      return { ok: true };
+    async (code: string): Promise<{ ok: boolean; reason?: string }> => {
+      try {
+        // কুপন যাচাই সার্ভারে (গোপন কুপন তালিকা আর ক্লায়েন্টে পাঠানো হয় না)
+        const res = await fetch("/api/coupons/validate", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ code, subtotalBDT }),
+        });
+        const data = await res.json();
+        if (!data.ok) return { ok: false, reason: data.reason || "Invalid code." };
+        setCouponCode(data.coupon.code);
+        setCustomDiscount(data.discountBDT);
+        return { ok: true };
+      } catch {
+        return { ok: false, reason: "Could not verify the code. Try again." };
+      }
     },
-    [subtotalBDT, activeCoupons]
+    [subtotalBDT]
   );
 
   const removeCoupon = useCallback(() => {

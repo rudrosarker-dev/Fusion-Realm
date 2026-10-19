@@ -504,12 +504,14 @@ export default function StaffPage() {
 
   const handleUpdatePassword = async (e: React.FormEvent) => {
     e.preventDefault();
+    const currentPassword = window.prompt("নিরাপত্তার জন্য আপনার বর্তমান পাসওয়ার্ড দিন:") || "";
+    if (!currentPassword) return;
     setUpdatingPass(true);
     try {
       const res = await fetch("/api/staff/profile", {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ password: newPassword }),
+        body: JSON.stringify({ password: newPassword, currentPassword }),
       });
       const data = await res.json();
       if (res.ok) {

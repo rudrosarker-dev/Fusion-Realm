@@ -8,11 +8,11 @@ export const siteSettings = pgTable("site_settings", {
   tagline: text("tagline").default("Considered garments for everyday movement."),
   description: text("description").default("An independent fashion house designing quiet, precise garments in heavyweight natural cloth."),
   contactPhone: text("contact_phone").default("+880 1798-994365"),
-  contactWhatsapp: text("contact_whatsapp").default("8801798994365"),
-  contactEmail: text("contact_email").default("rudro4365@gmail.com"),
+  contactWhatsapp: text("contact_whatsapp"),
+  contactEmail: text("contact_email"),
   contactAddress: text("contact_address").default("Banani, Dhaka, Bangladesh"),
   contactHours: text("contact_hours").default("Saturday – Thursday, 10:00 – 20:00 BST"),
-  paymentNumber: text("payment_number").default("01798994365"),
+  paymentNumber: text("payment_number"),
   paymentType: text("payment_type").default("bKash & Nagad Personal"),
   shippingInside: integer("shipping_inside").default(100),
   shippingOutside: integer("shipping_outside").default(150),
@@ -34,8 +34,10 @@ export const users = pgTable("users", {
   role: text("role").notNull().default("CUSTOMER"), // "SUPER_ADMIN" | "STAFF" | "CUSTOMER"
   roleTitle: text("role_title"), // e.g. "Order Moderator", "Delivery Staff"
   permissions: jsonb("permissions").$type<string[]>().default([]), // ["orders", "products", ...]
-  resetToken: text("reset_token"),
+  resetToken: text("reset_token"), // এখানে টোকেনের SHA-256 হ্যাশ রাখা হয়, আসল টোকেন নয়
   resetTokenExpiry: timestamp("reset_token_expiry"),
+  totpSecret: text("totp_secret"), // সক্রিয় 2FA সিক্রেট (null = 2FA বন্ধ)
+  totpPending: text("totp_pending"), // সেটআপ চলাকালীন অস্থায়ী সিক্রেট
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 

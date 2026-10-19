@@ -90,11 +90,3 @@ export const NAV = {
     { label: "Limited Edition", href: "/collections/limited" },
   ],
 };
-
-/** Demo auth — clearly separated from production auth. Replace with a
-    real provider (Supabase/Auth.js) before launch. */
-export const DEMO_USER = {
-  email: "demo@noirform.example.com",
-  password: "demo1234",
-  name: "Demo Customer",
-};

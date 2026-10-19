@@ -1,76 +1,63 @@
 import { NextRequest, NextResponse } from "next/server";
-import { cookies } from "next/headers";
 import { eq, and, ne } from "drizzle-orm";
 import { db } from "@/db";
 import { users } from "@/db/schema";
+import { comparePassword, hashPassword, isValidPasswordInput, MIN_PASSWORD_LENGTH } from "@/lib/password";
+import { checkRateLimit, clampStr, getClientIp } from "@/lib/security";
+import { getAdminUser, setSessionCookie } from "@/lib/auth";
 
 export const dynamic = "force-dynamic";
+const EMAIL_RE = /^[^\s@]{1,64}@[^\s@]+\.[^\s@]{2,}$/;
 
 export async function PATCH(req: NextRequest) {
   try {
-    const cookieStore = await cookies();
-    const session = cookieStore.get("nf_admin_session");
-    if (!session?.value) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-
-    const currentSession = JSON.parse(Buffer.from(session.value, "base64").toString("utf-8"));
-    const { name, email, password } = await req.json();
-
-    if (!name || !email) {
-      return NextResponse.json({ error: "Name and email are required" }, { status: 400 });
+    const me = await getAdminUser();
+    if (!me) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    if (!(await checkRateLimit(`admin-profile-${me.id}-${getClientIp(req)}`, 10, 600))) {
+      return NextResponse.json({ error: "Too many attempts." }, { status: 429 });
     }
 
-    const cleanEmail = email.trim().toLowerCase();
+    const body = await req.json().catch(() => ({}));
+    const name = clampStr(body.name, 100);
+    const email = clampStr(body.email, 200).toLowerCase();
+    const newPassword = typeof body.password === "string" && body.password.length > 0 ? body.password : null;
+    const currentPassword = typeof body.currentPassword === "string" ? body.currentPassword : "";
 
-    // চেক করা এই ইমেইলটি অন্য কোনো ইউজারের আছে কি না
-    const existing = await db
-      .select()
+    if (!name || !EMAIL_RE.test(email)) {
+      return NextResponse.json({ error: "Valid name and email are required" }, { status: 400 });
+    }
+
+    // ইমেইল বা পাসওয়ার্ড বদলাতে বর্তমান পাসওয়ার্ড লাগবে (সেশন চুরি হলেও অ্যাকাউন্ট দখল ঠেকায়)
+    const sensitive = newPassword !== null || email !== me.email;
+    if (sensitive && !(await comparePassword(currentPassword, me.passwordHash))) {
+      return NextResponse.json({ error: "বর্তমান পাসওয়ার্ড সঠিক নয় (Current password is incorrect)." }, { status: 400 });
+    }
+    if (newPassword !== null && !isValidPasswordInput(newPassword)) {
+      return NextResponse.json({ error: `নতুন পাসওয়ার্ড অন্তত ${MIN_PASSWORD_LENGTH} অক্ষরের হতে হবে।` }, { status: 400 });
+    }
+
+    const clash = await db
+      .select({ id: users.id })
       .from(users)
-      .where(and(eq(users.email, cleanEmail), ne(users.id, currentSession.id)))
+      .where(and(eq(users.email, email), ne(users.id, me.id)))
       .limit(1);
-
-    if (existing.length > 0) {
-      return NextResponse.json(
-        { error: `এই ইমেইলটি (${cleanEmail}) দিয়ে অলরেডি একটি অ্যাকাউন্ট রয়েছে। দয়া করে ভিন্ন কোনো এডমিন ইমেইল দিন।` },
-        { status: 400 }
-      );
+    if (clash.length > 0) {
+      return NextResponse.json({ error: "এই ইমেইল দিয়ে অন্য একটি অ্যাকাউন্ট রয়েছে।" }, { status: 400 });
     }
 
-    const updates: any = {
-      name: name.trim(),
-      email: cleanEmail,
-    };
+    const updates: Partial<typeof users.$inferInsert> = { name, email };
+    if (newPassword !== null) updates.passwordHash = await hashPassword(newPassword);
+    await db.update(users).set(updates).where(eq(users.id, me.id));
 
-    if (password && password.trim().length >= 6) {
-      updates.passwordHash = password.trim();
-    }
-
-    // ডাটাবেজে সুপার এডমিন আপডেট করা
-    await db.update(users).set(updates).where(eq(users.id, currentSession.id));
-
-    // নতুন সেশন কুকি রি-ইস্যু করা
-    const updatedSessionData = JSON.stringify({
-      id: currentSession.id,
-      name: updates.name,
-      email: updates.email,
-      role: currentSession.role,
-      loggedInAt: Date.now(),
-    });
-
-    cookieStore.set("nf_admin_session", Buffer.from(updatedSessionData).toString("base64"), {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
-      sameSite: "lax",
-      path: "/",
-      maxAge: 60 * 60 * 24 * 7,
-    });
+    // পাসওয়ার্ড বদলালে নতুন ফিঙ্গারপ্রিন্টসহ কুকি আবার ইস্যু (নিজে লগআউট হবে না, অন্য সব সেশন বাতিল)
+    await setSessionCookie("admin", { id: me.id, role: me.role, passwordHash: updates.passwordHash ?? me.passwordHash });
 
     return NextResponse.json({
       success: true,
-      user: { id: currentSession.id, name: updates.name, email: updates.email, role: currentSession.role },
+      user: { id: me.id, name, email, role: me.role },
       message: "Owner credentials successfully updated!",
     });
-  } catch (error: any) {
-    console.error("Admin profile update error:", error);
-    return NextResponse.json({ error: error.message || "Failed to update admin profile" }, { status: 500 });
+  } catch {
+    return NextResponse.json({ error: "Failed to update admin profile" }, { status: 500 });
   }
 }

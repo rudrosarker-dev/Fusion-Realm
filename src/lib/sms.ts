@@ -41,7 +41,7 @@ export async function sendSMS({ to, message }: SendSmsParams): Promise<boolean> 
 
 export const smsTemplates = {
   orderPlaced: (orderId: string, dueAmount: number) =>
-    `Dear Client, your order ${orderId} has been received at ${BRAND_CONFIG.brandName}. Due on delivery: BDT ${dueAmount.toLocaleString()}. Track: https://tholvexstudio.vercel.app/account`,
+    `Dear Client, your order ${orderId} has been received at ${BRAND_CONFIG.brandName}. Due on delivery: BDT ${dueAmount.toLocaleString()}. Track: ${process.env.NEXT_PUBLIC_SITE_URL || ""}/account`,
   courierDispatched: (orderId: string, trackingCode: string, dueAmount: number) =>
     `Your parcel ${orderId} is dispatched via Steadfast Courier! Tracking: ${trackingCode}. Cash to pay: BDT ${dueAmount.toLocaleString()}. - ${BRAND_CONFIG.brandName}`,
   delivered: (orderId: string) =>

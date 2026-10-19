@@ -1,10 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
 import { sql } from "drizzle-orm";
 import { db } from "@/db";
+import { isDeny, requireSuperAdmin } from "@/lib/auth";
+import { ensureTables } from "@/lib/ensure-tables";
+import { safeImageSrc } from "@/lib/security";
 
 export const dynamic = "force-dynamic";
 
-const DEFAULT_BANNERS = {
+const DEFAULT_BANNERS: Record<string, string> = {
   hero: "/images/hero.jpg",
   collection: "/images/collection.jpg",
   men: "/images/category-men.jpg",
@@ -15,66 +18,40 @@ const DEFAULT_BANNERS = {
   journal3: "/images/category-men.jpg",
 };
 
-// ১. ডাটাবেজ থেকে ব্যানার আনা
 export async function GET() {
   try {
-    await db.execute(sql`
-      CREATE TABLE IF NOT EXISTS store_banners (
-        id text PRIMARY KEY,
-        banners jsonb NOT NULL,
-        updated_at timestamp DEFAULT NOW()
-      );
-    `);
-
-    const result: any = await db.execute(sql`
-      SELECT banners FROM store_banners WHERE id = 'main_banners' LIMIT 1;
-    `);
-
+    await ensureTables();
+    const result: any = await db.execute(sql`SELECT banners FROM store_banners WHERE id = 'main_banners' LIMIT 1;`);
     if (result.rows && result.rows.length > 0) {
-      return NextResponse.json({ success: true, banners: result.rows[0].banners });
+      return NextResponse.json({ success: true, banners: { ...DEFAULT_BANNERS, ...result.rows[0].banners } });
     }
-
     return NextResponse.json({ success: true, banners: DEFAULT_BANNERS });
-  } catch (error) {
-    console.error("Banner fetch error:", error);
+  } catch {
     return NextResponse.json({ success: true, banners: DEFAULT_BANNERS });
   }
 }
 
-// ২. অ্যাডমিন থেকে ব্যানার সেভ করা
+// আগে অথহীন ছিল — এখন শুধু SUPER_ADMIN, এবং প্রতিটি ছবির সোর্স যাচাই করা হয়
 export async function POST(req: NextRequest) {
   try {
-    const body = await req.json();
-    const banners = {
-      hero: body.hero || DEFAULT_BANNERS.hero,
-      collection: body.collection || DEFAULT_BANNERS.collection,
-      men: body.men || DEFAULT_BANNERS.men,
-      women: body.women || DEFAULT_BANNERS.women,
-      story: body.story || DEFAULT_BANNERS.story,
-      journal1: body.journal1 || DEFAULT_BANNERS.journal1,
-      journal2: body.journal2 || DEFAULT_BANNERS.journal2,
-      journal3: body.journal3 || DEFAULT_BANNERS.journal3,
-    };
+    const auth = await requireSuperAdmin();
+    if (isDeny(auth)) return auth.response;
 
-    await db.execute(sql`
-      CREATE TABLE IF NOT EXISTS store_banners (
-        id text PRIMARY KEY,
-        banners jsonb NOT NULL,
-        updated_at timestamp DEFAULT NOW()
-      );
-    `);
+    const body = await req.json().catch(() => ({}));
+    const banners: Record<string, string> = {};
+    for (const key of Object.keys(DEFAULT_BANNERS)) {
+      banners[key] = safeImageSrc(body[key]) || DEFAULT_BANNERS[key];
+    }
 
+    await ensureTables();
+    const json = JSON.stringify(banners);
     await db.execute(sql`
       INSERT INTO store_banners (id, banners, updated_at)
-      VALUES ('main_banners', ${JSON.stringify(banners)}::jsonb, NOW())
-      ON CONFLICT (id) DO UPDATE SET
-        banners = ${JSON.stringify(banners)}::jsonb,
-        updated_at = NOW();
+      VALUES ('main_banners', ${json}::jsonb, NOW())
+      ON CONFLICT (id) DO UPDATE SET banners = ${json}::jsonb, updated_at = NOW();
     `);
-
     return NextResponse.json({ success: true, banners, message: "Banners updated live in database!" });
-  } catch (error) {
-    console.error("Banner save error:", error);
+  } catch {
     return NextResponse.json({ error: "Failed to save banners" }, { status: 500 });
   }
 }

@@ -4,6 +4,9 @@ import { revalidatePath } from "next/cache";
 import { sql } from "drizzle-orm";
 import { db } from "@/db";
 import { LEGAL } from "@/lib/data/content";
+import { isDeny, requireSuperAdmin } from "@/lib/auth";
+import { ensureTables } from "@/lib/ensure-tables";
+import { clampStr, safeHref } from "@/lib/security";
 
 export const dynamic = "force-dynamic";
 
@@ -72,13 +75,7 @@ const DEFAULT_CONTENT = {
 
 export async function GET() {
   try {
-    await db.execute(sql`
-      CREATE TABLE IF NOT EXISTS store_content (
-        id text PRIMARY KEY,
-        content jsonb NOT NULL,
-        updated_at timestamp DEFAULT NOW()
-      );
-    `);
+    await ensureTables();
 
     const result: any = await db.execute(sql`
       SELECT content FROM store_content WHERE id = 'site_content' LIMIT 1;
@@ -108,24 +105,46 @@ export async function GET() {
   }
 }
 
+const SOCIAL_KEYS = ["instagram", "facebook", "tiktok", "pinterest"];
+const ALLOWED_KEYS = ["homepageMode", "marqueeItems", "homeContent", "shopContent", "about", "legal", "socials", "faqs"];
+
 export async function POST(req: NextRequest) {
   try {
-    const body = await req.json();
+    // আগে কোনো অথ ছিল না — এখন শুধু SUPER_ADMIN
+    const auth = await requireSuperAdmin();
+    if (isDeny(auth)) return auth.response;
 
-    await db.execute(sql`
-      CREATE TABLE IF NOT EXISTS store_content (
-        id text PRIMARY KEY,
-        content jsonb NOT NULL,
-        updated_at timestamp DEFAULT NOW()
-      );
-    `);
+    const raw = await req.text();
+    if (raw.length > 400_000) return NextResponse.json({ error: "Content too large" }, { status: 413 });
+    let input: any;
+    try {
+      input = JSON.parse(raw);
+    } catch {
+      return NextResponse.json({ error: "Invalid JSON" }, { status: 400 });
+    }
+    if (!input || typeof input !== "object" || Array.isArray(input)) {
+      return NextResponse.json({ error: "Invalid content" }, { status: 400 });
+    }
 
+    // শুধু অনুমোদিত কী রাখা হয়
+    const body: Record<string, any> = {};
+    for (const k of ALLOWED_KEYS) if (input[k] !== undefined) body[k] = input[k];
+
+    // সোশ্যাল লিংক: শুধু http(s) — javascript: URL (Stored XSS) বাতিল
+    if (body.socials && typeof body.socials === "object") {
+      const clean: Record<string, string> = {};
+      for (const k of SOCIAL_KEYS) clean[k] = safeHref(body.socials[k], "");
+      body.socials = clean;
+    }
+    if (body.homepageMode !== undefined) body.homepageMode = clampStr(body.homepageMode, 40);
+    if (body.marqueeItems !== undefined) body.marqueeItems = clampStr(body.marqueeItems, 1000);
+
+    await ensureTables();
+    const json = JSON.stringify(body);
     await db.execute(sql`
       INSERT INTO store_content (id, content, updated_at)
-      VALUES ('site_content', ${JSON.stringify(body)}::jsonb, NOW())
-      ON CONFLICT (id) DO UPDATE SET
-        content = ${JSON.stringify(body)}::jsonb,
-        updated_at = NOW();
+      VALUES ('site_content', ${json}::jsonb, NOW())
+      ON CONFLICT (id) DO UPDATE SET content = ${json}::jsonb, updated_at = NOW();
     `);
 
     try {
@@ -135,13 +154,8 @@ export async function POST(req: NextRequest) {
       revalidatePath("/contact");
     } catch {}
 
-    return NextResponse.json({
-      success: true,
-      message: "Website content & settings updated live in database!",
-    });
-  } catch (error) {
-    console.error("Content save error:", error);
+    return NextResponse.json({ success: true, message: "Website content & settings updated live in database!" });
+  } catch {
     return NextResponse.json({ error: "Failed to save website content" }, { status: 500 });
   }
 }
-// END OF FILE src/app/api/content/route.ts

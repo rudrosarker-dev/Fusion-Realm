@@ -27,8 +27,8 @@ function ResetPasswordForm() {
       return;
     }
 
-    if (password.length < 6) {
-      setError("পাসওয়ার্ড কমপক্ষে ৬ অক্ষরের হতে হবে।");
+    if (password.length < 8) {
+      setError("পাসওয়ার্ড কমপক্ষে ৮ অক্ষরের হতে হবে।");
       return;
     }
 
@@ -52,10 +52,6 @@ function ResetPasswordForm() {
         setError(data.error || "পাসওয়ার্ড রিসেট ব্যর্থ হয়েছে।");
       } else {
         setSuccess(true);
-        // অটো লগইন সেশন সেট
-        if (data.user) {
-          writeLS("nf-customer-session", data.user);
-        }
         setTimeout(() => {
           router.push("/account");
         }, 2000);

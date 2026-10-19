@@ -1,112 +1,80 @@
-// START OF FILE src/app/api/abandoned-cart/route.ts
 import { NextRequest, NextResponse } from "next/server";
 import { sql } from "drizzle-orm";
 import { db } from "@/db";
+import { isDeny, requireAccess } from "@/lib/auth";
+import { ensureTables } from "@/lib/ensure-tables";
+import { checkRateLimit, clampStr, getClientIp } from "@/lib/security";
 
 export const dynamic = "force-dynamic";
 
-// ১. সকল ড্রাফট / ফেলে যাওয়া কার্ট লিস্ট আনা
+// আগে গ্রাহকদের নাম/ফোন/ইমেইল সবার জন্য খোলা ছিল — এখন শুধু অর্ডার/CRM অ্যাক্সেসধারী
 export async function GET() {
   try {
-    await db.execute(sql`
-      CREATE TABLE IF NOT EXISTS abandoned_carts (
-        id text PRIMARY KEY,
-        customer_name text NOT NULL,
-        customer_email text,
-        customer_phone text NOT NULL,
-        items jsonb NOT NULL,
-        total_bdt integer NOT NULL,
-        status text DEFAULT 'PENDING',
-        created_at timestamp DEFAULT NOW()
-      );
-    `);
-
+    const auth = await requireAccess("orders", "customers");
+    if (isDeny(auth)) return auth.response;
+    await ensureTables();
     const result: any = await db.execute(sql`
       SELECT * FROM abandoned_carts WHERE status = 'PENDING' ORDER BY created_at DESC LIMIT 50;
     `);
-
     return NextResponse.json({ success: true, carts: result.rows || [] });
-  } catch (error) {
-    console.error("Abandoned cart fetch error:", error);
+  } catch {
     return NextResponse.json({ success: true, carts: [] });
   }
 }
 
-// ২. চেকআউট থেকে ব্যাকগ্রাউন্ডে ড্রাফট কার্ট সংরক্ষণ
+// চেকআউট থেকে ড্রাফট সংরক্ষণ (পাবলিক, কিন্তু রেট-লিমিট ও ইনপুট-সীমা সহ)
 export async function POST(req: NextRequest) {
   try {
-    const body = await req.json();
-    const phone = (body.customerPhone || "").trim();
-
-    if (!phone || phone.length < 10) {
+    if (!(await checkRateLimit(`draft-${getClientIp(req)}`, 20, 60))) {
+      return NextResponse.json({ error: "Too many requests" }, { status: 429 });
+    }
+    const body = await req.json().catch(() => ({}));
+    const phone = clampStr(body.customerPhone, 20);
+    const digits = phone.replace(/[^0-9]/g, "");
+    if (digits.length < 10 || digits.length > 15) {
       return NextResponse.json({ error: "Valid phone required" }, { status: 400 });
     }
 
-    const id = `draft-${phone.replace(/[^0-9]/g, "")}`;
-    const name = body.customerName || "Interested Client";
-    const email = body.customerEmail || "";
-    const items = body.items || [];
-    const total = Number(body.totalBDT || 0);
+    const id = `draft-${digits}`;
+    const name = clampStr(body.customerName, 100) || "Interested Client";
+    const email = clampStr(body.customerEmail, 200);
+    const items = (Array.isArray(body.items) ? body.items : []).slice(0, 30).map((i: any) => ({
+      productId: clampStr(i?.productId, 100),
+      name: clampStr(i?.name, 150),
+      size: clampStr(i?.size, 10),
+      color: clampStr(i?.color, 30),
+      qty: Math.max(1, Math.min(99, Math.floor(Number(i?.qty ?? i?.quantity) || 1))),
+      priceBDT: Math.max(0, Math.floor(Number(i?.priceBDT) || 0)),
+    }));
+    const total = Math.max(0, Math.min(100_000_000, Math.floor(Number(body.totalBDT) || 0)));
 
-    await db.execute(sql`
-      CREATE TABLE IF NOT EXISTS abandoned_carts (
-        id text PRIMARY KEY,
-        customer_name text NOT NULL,
-        customer_email text,
-        customer_phone text NOT NULL,
-        items jsonb NOT NULL,
-        total_bdt integer NOT NULL,
-        status text DEFAULT 'PENDING',
-        created_at timestamp DEFAULT NOW()
-      );
-    `);
-
+    await ensureTables();
+    const itemsJson = JSON.stringify(items);
     await db.execute(sql`
       INSERT INTO abandoned_carts (id, customer_name, customer_email, customer_phone, items, total_bdt, status, created_at)
-      VALUES (
-        ${id},
-        ${name},
-        ${email},
-        ${phone},
-        ${JSON.stringify(items)}::jsonb,
-        ${total},
-        'PENDING',
-        NOW()
-      )
+      VALUES (${id}, ${name}, ${email}, ${phone}, ${itemsJson}::jsonb, ${total}, 'PENDING', NOW())
       ON CONFLICT (id) DO UPDATE SET
-        customer_name = ${name},
-        customer_email = ${email},
-        items = ${JSON.stringify(items)}::jsonb,
-        total_bdt = ${total},
-        status = 'PENDING',
-        created_at = NOW();
+        customer_name = ${name}, customer_email = ${email}, items = ${itemsJson}::jsonb,
+        total_bdt = ${total}, status = 'PENDING', created_at = NOW();
     `);
-
     return NextResponse.json({ success: true, message: "Draft cart captured." });
-  } catch (error) {
-    console.error("Draft capture error:", error);
+  } catch {
     return NextResponse.json({ error: "Failed to capture draft" }, { status: 500 });
   }
 }
 
-// ৩. অর্ডার কনফার্ম হলে ড্রাফট মুছে ফেলা
+// মুছে ফেলা — শুধু অথেন্টিকেটেড অ্যাডমিন/স্টাফ (অর্ডার হলে সার্ভার নিজেই ড্রাফট মুছে দেয়)
 export async function DELETE(req: NextRequest) {
   try {
+    const auth = await requireAccess("orders", "customers");
+    if (isDeny(auth)) return auth.response;
     const { searchParams } = new URL(req.url);
-    const id = searchParams.get("id");
-    const phone = searchParams.get("phone");
-
-    const targetId = id || (phone ? `draft-${phone.replace(/[^0-9]/g, "")}` : null);
-
-    if (targetId) {
-      await db.execute(sql`
-        DELETE FROM abandoned_carts WHERE id = ${targetId};
-      `);
-    }
-
+    const id = clampStr(searchParams.get("id"), 100);
+    if (!id) return NextResponse.json({ error: "id required" }, { status: 400 });
+    await ensureTables();
+    await db.execute(sql`DELETE FROM abandoned_carts WHERE id = ${id}`);
     return NextResponse.json({ success: true, message: "Draft resolved." });
-  } catch (error) {
+  } catch {
     return NextResponse.json({ error: "Failed to delete draft" }, { status: 500 });
   }
 }
-// END OF FILE src/app/api/abandoned-cart/route.ts

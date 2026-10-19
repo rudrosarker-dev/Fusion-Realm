@@ -97,15 +97,14 @@ export default function CheckoutPage() {
   useEffect(() => {
     setMounted(true);
 
-    const session = readLS<any>("nf-customer-session", null);
-    if (session) {
-      setForm((prev) => ({
-        ...prev,
-        email: session.email || prev.email,
-        fullName: session.name || prev.fullName,
-        phone: session.phone || prev.phone,
-      }));
-    }
+    fetch("/api/auth/me", { cache: "no-store" })
+      .then((r) => (r.ok ? r.json() : null))
+      .then((d) => {
+        if (d?.authenticated && d.user) {
+          setForm((prev) => ({ ...prev, email: d.user.email || prev.email, fullName: d.user.name || prev.fullName }));
+        }
+      })
+      .catch(() => {});
 
     if (items.length > 0) {
       fbEvents.initiateCheckout({
@@ -218,19 +217,48 @@ export default function CheckoutPage() {
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
-  const placeOrder = () => {
+  const placeOrder = async () => {
+    if (placing) return;
     setPlacing(true);
-    window.setTimeout(() => {
-      const generatedOrderId = orderId();
+    try {
       const cleanEmail = form.email.trim().toLowerCase();
 
+      // দাম/ডিসকাউন্ট/শিপিং/স্ট্যাটাস সার্ভার নিজে হিসাব করে — ক্লায়েন্ট শুধু কী কিনছে তা জানায়
+      const res = await fetch("/api/orders", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          customerName: form.fullName.trim(),
+          customerPhone: form.phone.trim(),
+          customerEmail: cleanEmail,
+          items: items.map((i) => ({ productId: i.productId, size: i.size, color: i.color, qty: i.qty })),
+          couponCode: couponCode ?? undefined,
+          paymentType: form.paymentMethod,
+          senderPhone: form.senderPhone.trim(),
+          transactionId: form.transactionId.trim().toUpperCase(),
+          shippingAddress: {
+            division: form.division,
+            district: form.city,
+            address: form.address,
+          },
+        }),
+      });
+      const data = await res.json().catch(() => ({}));
+
+      if (!res.ok || !data.success) {
+        push("error", data.error || "অর্ডার সম্পন্ন করা যায়নি। আবার চেষ্টা করুন।");
+        setPlacing(false);
+        return;
+      }
+
+      const srv = data.order;
       const formattedPaymentMethod =
         form.paymentMethod === "cod"
-          ? `COD [Advance Delivery: ৳${advancePayable} | Trx: ${form.transactionId.trim().toUpperCase()}]`
-          : `Full Paid [৳${totalBDT} | Trx: ${form.transactionId.trim().toUpperCase()}]`;
+          ? `COD [Advance Delivery: ৳${srv.advancePaidBDT} | Trx: ${form.transactionId.trim().toUpperCase()}]`
+          : `Full Paid [৳${srv.totalBDT} | Trx: ${form.transactionId.trim().toUpperCase()}]`;
 
       const newOrder: any = {
-        id: generatedOrderId,
+        id: srv.id,
         email: cleanEmail,
         customerEmail: cleanEmail,
         customerName: form.fullName.trim(),
@@ -248,24 +276,24 @@ export default function CheckoutPage() {
         shippingMethod: isInsideDhakaCity
           ? `Inside Dhaka (৳${BRAND_CONFIG.shipping.insideDhakaFee})`
           : `Outside Dhaka (৳${BRAND_CONFIG.shipping.outsideDhakaFee})`,
-        shippingBDT: shippingFee,
-        discountBDT,
-        subtotalBDT,
-        totalBDT,
+        shippingBDT: srv.shippingBDT,
+        discountBDT: srv.discountBDT,
+        subtotalBDT: srv.subtotalBDT,
+        totalBDT: srv.totalBDT,
         couponCode: couponCode ?? undefined,
         paymentMethod: formattedPaymentMethod,
         paymentStatus: "pending",
         status: "pending",
         placedAt: new Date().toISOString(),
-        advancePaidBDT: advancePayable,
-        dueAmountBDT: dueOnDelivery,
+        advancePaidBDT: srv.advancePaidBDT,
+        dueAmountBDT: srv.dueAmountBDT,
         senderNumber: form.senderPhone.trim(),
         transactionId: form.transactionId.trim().toUpperCase(),
       };
 
       fbEvents.purchase({
-        id: generatedOrderId,
-        totalBDT: totalBDT,
+        id: srv.id,
+        totalBDT: srv.totalBDT,
         itemIds: items.map((i) => i.productId),
         itemsCount: items.reduce((s, i) => s + i.qty, 0),
       });
@@ -273,41 +301,16 @@ export default function CheckoutPage() {
       const existing = readLS<any[]>(LS_KEYS.orders, []);
       writeLS(LS_KEYS.orders, [newOrder, ...existing]);
 
-      fetch("/api/orders", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          ...newOrder,
-          advancePaidBDT: advancePayable,
-          dueAmountBDT: dueOnDelivery,
-          senderPhone: form.senderPhone.trim(),
-          transactionId: form.transactionId.trim().toUpperCase(),
-          customerName: form.fullName.trim(),
-          customerPhone: form.phone.trim(),
-          customerEmail: cleanEmail,
-          shippingAddress: {
-            division: form.division,
-            district: form.city,
-            address: form.address,
-            advancePaidBDT: advancePayable,
-            dueAmountBDT: dueOnDelivery,
-            senderNumber: form.senderPhone.trim(),
-            transactionId: form.transactionId.trim().toUpperCase(),
-          },
-        }),
-      }).catch((err) => console.error("Database order sync error:", err));
-
-      fetch(`/api/abandoned-cart?phone=${encodeURIComponent(form.phone.trim())}`, {
-        method: "DELETE",
-      }).catch(() => {});
-
       setOrder(newOrder);
       clear();
       setPlacing(false);
       setStep(4);
       push("success", `Order ${newOrder.id} placed. Thank you.`);
       window.scrollTo({ top: 0 });
-    }, 800);
+    } catch {
+      push("error", "সার্ভারের সাথে যোগাযোগ করা যাচ্ছে না। আবার চেষ্টা করুন।");
+      setPlacing(false);
+    }
   };
 
   if (!mounted) {
@@ -420,8 +423,8 @@ export default function CheckoutPage() {
             />
             <button
               type="button"
-              onClick={() => {
-                const r = applyCoupon(code);
+              onClick={async () => {
+                const r = await applyCoupon(code);
                 push(r.ok ? "success" : "error", r.ok ? "Code applied." : (r.reason ?? "Invalid code."));
                 if (r.ok) setCode("");
               }}

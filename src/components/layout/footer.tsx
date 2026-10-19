@@ -7,6 +7,7 @@ import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
 import { cn } from "@/lib/utils";
 import { BRAND_CONFIG } from "@/lib/brand.config";
+import { safeHref } from "@/lib/safe";
 
 const InstagramIcon = ({ className }: { className?: string }) => (
   <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5} strokeLinecap="round" strokeLinejoin="round" className={className}>
@@ -297,10 +298,10 @@ export function Footer() {
             © {new Date().getFullYear()} {BRAND_CONFIG.brandName}. Handcrafted in Dhaka Atelier.
           </p>
           <div className="flex items-center gap-5">
-            <a href={socials.instagram} target="_blank" rel="noopener noreferrer" aria-label="Instagram" className="text-paper/50 hover:text-[#dfcaa8] transition-colors">
+            <a href={safeHref(socials.instagram)} target="_blank" rel="noopener noreferrer" aria-label="Instagram" className="text-paper/50 hover:text-[#dfcaa8] transition-colors">
               <InstagramIcon className="size-4" />
             </a>
-            <a href={socials.facebook} target="_blank" rel="noopener noreferrer" aria-label="Facebook" className="text-paper/50 hover:text-[#dfcaa8] transition-colors">
+            <a href={safeHref(socials.facebook)} target="_blank" rel="noopener noreferrer" aria-label="Facebook" className="text-paper/50 hover:text-[#dfcaa8] transition-colors">
               <FacebookIcon className="size-4" />
             </a>
           </div>

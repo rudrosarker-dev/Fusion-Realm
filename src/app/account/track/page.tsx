@@ -7,6 +7,7 @@ import { cn } from "@/lib/utils";
 
 export default function TrackOrderPage() {
   const [query, setQuery] = useState("");
+  const [phone, setPhone] = useState("");
   const [order, setOrder] = useState<any>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
@@ -16,12 +17,12 @@ export default function TrackOrderPage() {
     setLoading(true);
     setError("");
     try {
-      const res = await fetch(`/api/orders/track?id=${query}&phone=${query}`);
+      const res = await fetch(`/api/orders/track?id=${encodeURIComponent(query.trim())}&phone=${encodeURIComponent(phone.trim())}`);
       const data = await res.json();
       if (res.ok && data.orders.length > 0) {
         setOrder(data.orders[0]);
       } else {
-        setError("Order not found. Please check your Order ID or Phone.");
+        setError("Order not found. Please check your Order ID and the phone number used for the order.");
       }
     } catch {
       setError("Database connection error.");
@@ -36,12 +37,19 @@ export default function TrackOrderPage() {
       
       {!order ? (
         <form onSubmit={trackOrder} className="border border-line bg-cream p-8 space-y-5">
-          <Input 
-            label="Order ID or Phone Number" 
-            placeholder="e.g. NF-849201 or 017XXXXXXXX" 
-            required 
-            value={query} 
-            onChange={(e) => setQuery(e.target.value)} 
+          <Input
+            label="Order ID"
+            placeholder="e.g. NF-1A2B3C4D5E"
+            required
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+          />
+          <Input
+            label="Phone Number used for the order"
+            placeholder="017XXXXXXXX"
+            required
+            value={phone}
+            onChange={(e) => setPhone(e.target.value)}
           />
           {error && <p className="text-xs text-error">{error}</p>}
           <Button type="submit" loading={loading}>Track Order</Button>
